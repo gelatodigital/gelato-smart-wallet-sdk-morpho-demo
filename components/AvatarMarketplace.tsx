@@ -16,12 +16,32 @@ import {client} from "@/app/blockchain/config"
 import {useWaitForTransactionReceipt} from "wagmi"
 import {Ignis, Tyde} from "@/app/blockchain/contracts"
 
-interface AvatarMarketplaceProps {
-  isLoggedIn: boolean
-  addLog: (guardianName: string) => void
+interface Guardian {
+  id: number
+  name: string
+  image: string
 }
 
-const guardians = [
+interface SingleListing {
+  id: number
+  type: 'single'
+  guardian: Guardian
+}
+
+interface BundleListing {
+  id: number
+  type: 'bundle'
+  guardians: [Guardian, Guardian]
+}
+
+type Listing = SingleListing | BundleListing
+
+interface AvatarMarketplaceProps {
+  isLoggedIn: boolean
+  addLog: (value: string | JSX.Element) => void
+}
+
+const guardians: Guardian[] = [
   {
     id: 1,
     name: 'Tyde',
@@ -44,7 +64,7 @@ const guardians = [
   },
 ]
 
-const listings = [
+const listings: Listing[] = [
   {
     id: 1,
     type: 'single',
@@ -60,8 +80,8 @@ const listings = [
 export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketplaceProps) {
   const { data: account } = Account.useQuery()
   const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [mintedListing, setMintedListing] = useState<typeof listings[0] | null>(null)
-  const [selectedListing, setSelectedListing] = useState<typeof listings[0] | null>(null)
+  const [mintedListing, setMintedListing] = useState<Listing | null>(null)
+  const [selectedListing, setSelectedListing] = useState<Listing | null>(null)
   const [transactionHash, setTransactionHash] = useState('')
   const [isMinting, setIsMinting] = useState(false)
 
@@ -84,15 +104,19 @@ export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketpl
     setTransactionHash('')
   }, [])
 
-  const handlePurchase = useCallback((listing: typeof listings[0]) => {
-    if (!isLoggedIn) {
+  const handlePurchase = useCallback((listing: Listing) => {
+    if (!isLoggedIn || !account) {
       addLog('User attempted to mint without logging in')
       return
     }
     setIsMinting(true)
     setSelectedListing(listing)
-    const avatarName = listing.type === 'single' ? listing.guardian.name : `${listing.guardians[0].name} + ${listing.guardians[1].name}`
-    addLog(`NFT purchase request for "${avatarName}" was initiated by ${shortenAddress(account?.address)}.`)
+
+    const avatarName = listing.type === 'single'
+      ? listing.guardian.name
+      : `${listing.guardians[0].name} + ${listing.guardians[1].name}`
+
+    addLog(`NFT purchase request for "${avatarName}" was initiated by ${shortenAddress(account.address)}.`)
 
     executeMint({
       account,
@@ -118,14 +142,16 @@ export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketpl
   }, [addLog, isLoggedIn, executeMint, account])
 
   useEffect(() => {
-    if (isMinting) {
+    if (isMinting && account?.address) {
       addLog(`User ${account.address} is minting...`)
     }
-  }, [isMinting])
+  }, [isMinting, account])
 
   useEffect(() => {
     if (mintError) {
-      const errorMessage = mintError instanceof BaseError ? mintError.shortMessage : mintError.message
+      const errorMessage = mintError instanceof BaseError
+        ? mintError.shortMessage
+        : (mintError as Error).message
       addLog(<span className="text-red-400">An error has occurred while minting: {errorMessage}</span>)
       setIsMinting(false)
     }
@@ -149,7 +175,7 @@ export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketpl
     if (mintHash) {
       setTransactionHash(mintHash)
     }
-  }, [mintHash]);
+  }, [mintHash])
 
   return (
     <div className="p-8">
@@ -212,7 +238,9 @@ export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketpl
               You have successfully minted{' '}
               {mintedListing?.type === 'single'
                 ? mintedListing.guardian.name
-                : `${mintedListing?.guardians[0].name} and ${mintedListing?.guardians[1].name} bundle`}!
+                : mintedListing?.type === 'bundle'
+                  ? `${mintedListing.guardians[0].name} and ${mintedListing.guardians[1].name} bundle`
+                  : ''}!
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-4">
@@ -224,9 +252,9 @@ export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketpl
                   className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full object-cover"
                 />
               </div>
-            ) : (
+            ) : mintedListing?.type === 'bundle' ? (
               <div className="w-full max-w-md grid grid-cols-2 gap-4 mb-4">
-                {mintedListing?.guardians.map((guardian) => (
+                {mintedListing.guardians.map((guardian) => (
                   <div key={guardian.id} className="aspect-[16/9] relative rounded-lg border-4 border-[#2D9CDB] overflow-hidden">
                     <img
                       src={guardian.image}
@@ -236,7 +264,7 @@ export default function AvatarMarketplace({ isLoggedIn, addLog }: AvatarMarketpl
                   </div>
                 ))}
               </div>
-            )}
+            ) : null}
             <p className="text-white mb-2">Transaction Hash:</p>
             {transactionHash && (
               <a

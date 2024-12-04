@@ -3,7 +3,7 @@ import { ChevronUp, ChevronDown } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 
 interface TerminalLogProps {
-  logs: string[]
+  logs: (string | JSX.Element)[]
   isOpen: boolean
   setIsOpen: (value: boolean) => void
 }
@@ -31,7 +31,7 @@ export default function TerminalLog({ logs, isOpen, setIsOpen }: TerminalLogProp
         </Button>
       </div>
       <div className={`p-4 overflow-y-auto ${isOpen ? 'h-52' : 'h-0'}`}>
-        {logs.map((log, index) => (
+        {logs?.map((log: string | JSX.Element, index: number) => (
           <p key={index} className="mb-1">
             <span className="text-blue-400">[{new Date().toISOString()}]</span> {log}
           </p>

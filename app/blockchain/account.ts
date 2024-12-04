@@ -102,8 +102,8 @@ export namespace Account {
                                     client,
                                     publicKey,
                                   }: { account: PrivateKeyAccount; client: Client; publicKey: PublicKey }) {
-    const nonce = 0n // initial nonce will always be 0
-    const expiry = 0n // no expiry
+    const nonce = BigInt(0) // initial nonce will always be 0
+    const expiry = BigInt(0) // no expiry
 
     // Compute digest to sign for the authorize function.
     const digest = keccak256(
@@ -168,7 +168,7 @@ export namespace Account {
       address,
       abi: ExperimentDelegation.abi,
       functionName: 'keys',
-      args: [0n],
+      args: [BigInt(0)],
     })
 
     queryClient.setQueryData(['account'], {
@@ -208,7 +208,7 @@ export namespace Account {
           [
             0,
             call.to,
-            call.value ?? 0n,
+            call.value ?? BigInt(0),
             BigInt(size(call.data ?? '0x')),
             call.data ?? '0x',
           ],

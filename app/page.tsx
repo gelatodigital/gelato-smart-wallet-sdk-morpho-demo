@@ -14,7 +14,7 @@ interface HomeProps {}
 export default function Home({}: HomeProps) {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [logs, setLogs] = useState<(string | JSX.Element)[]>([]);
-  const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   const { data: account } = Account.useQuery();
   const { data: hash, ...createMutation } = Account.useCreate({

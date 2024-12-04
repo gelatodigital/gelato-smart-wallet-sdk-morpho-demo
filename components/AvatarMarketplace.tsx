@@ -45,17 +45,17 @@ const guardians: Guardian[] = [
   {
     id: 1,
     name: "Tyde",
-    image: "https://anichess.com/static/media/story-6.50b7eb8fe21bc74b8710.png",
+    image: "/nft-1-abc.svg",
   },
   {
     id: 2,
     name: "Ignis",
-    image: "https://anichess.com/static/media/story-7.92adc9badf10d5ee1d7f.png",
+    image: "/nft-2-abc.svg",
   },
   {
     id: 3,
     name: "Tempest",
-    image: "https://anichess.com/static/media/story-8.bbb546d81d8815bb5b28.png",
+    image: "/nft-1-abc.svg",
   },
   {
     id: 4,

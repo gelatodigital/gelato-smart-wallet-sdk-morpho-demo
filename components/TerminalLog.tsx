@@ -20,12 +20,12 @@ export default function TerminalLog({ logs, isOpen, setIsOpen }: TerminalLogProp
   return (
     <div className={`fixed bottom-0 left-0 right-0 bg-black bg-opacity-80 text-green-400 font-mono text-sm transition-all duration-300 ease-in-out z-[9999] ${isOpen ? 'h-64' : 'h-12'}`}>
       <div className="flex justify-between items-center px-4 py-2 bg-gray-800">
-        <h3 className="text-yellow-400">Onchain Terminal Log</h3>
+        <h3 className="text-white">Logs</h3>
         <Button
           onClick={() => setIsOpen(!isOpen)}
           variant="ghost"
           size="sm"
-          className="text-yellow-400 hover:text-yellow-300"
+          className="text-white hover:text-[#00AFFA]"
         >
           {isOpen ? <ChevronDown /> : <ChevronUp />}
         </Button>

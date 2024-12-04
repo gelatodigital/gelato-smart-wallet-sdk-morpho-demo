@@ -20,18 +20,18 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
   }
 
   return (
-    <header className="bg-[#1A1B35] p-4 flex justify-between items-center">
-      <h1 className="text-4xl font-bold text-[#2D9CDB]">Anichess</h1>
+    <header className="w-full bg-[#1A1B35] p-4 flex justify-between items-center">
+      <img src="/anichess.svg" alt="Anichess" className="w-[163px] h-[40px]" />
       {!isLoggedIn && (
-        <Button onClick={handleLogin} className="bg-[#2D9CDB] text-white hover:bg-[#2D9CDB]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full">
+        <Button onClick={handleLogin} className="bg-[#00AFFA] text-black hover:bg-[#00AFFA]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full">
           Login
         </Button>
       )}
       {isLoggedIn && (
   <div className="flex items-center">
-    <span className="text-green-400 font-semibold mr-2">Logged In</span>
+    <span className="text-[#00AFFA] font-semibold mr-2">Logged In</span>
     {walletAddress && (
-      <a target={"_blank"} href={`https://chess.cloud.blockscout.com/address/${walletAddress}`} className="text-[#2D9CDB] hover:text-[#2D9CDB]/80 transition-colors duration-200">
+      <a target={"_blank"} href={`https://chess.cloud.blockscout.com/address/${walletAddress}`} className="text-white hover:text-[#00AFFA]/80 transition-colors duration-200">
         {shortenAddress(walletAddress)}
       </a>
     )}
@@ -39,9 +39,9 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
 )}
 
       <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-        <DialogContent className="bg-[#1A1B35] border-2 border-[#2D9CDB]">
+        <DialogContent className="bg-[#1A1B35] border-2 border-[#00AFFA]">
           <DialogHeader>
-            <DialogTitle className="text-[#2D9CDB]">Logging in...</DialogTitle>
+            <DialogTitle className="text-[#00AFFA]">Logging in...</DialogTitle>
             <DialogDescription className="text-white">
               Please wait while we authenticate your account.
             </DialogDescription>

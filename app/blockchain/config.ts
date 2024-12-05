@@ -3,37 +3,37 @@ import { defineChain } from 'viem';
 import { http, createConfig } from 'wagmi'
 
 export const queryClient = new QueryClient()
-export const chess = defineChain({
-  id: 123420000962,
-  network: "chess",
-  name: "Chess",
+export const abcTestnet = defineChain({
+  id: 112,
+  network: "abctestnet",
+  name: "ABC Testnet",
   nativeCurrency: {
-    name: "ETH",
-    symbol: "ETH",
+    name: "TEST",
+    symbol: "TEST",
     decimals: 18,
   },
   rpcUrls: {
     public: {
-      http: ["https://rpc.chess.t.raas.gelato.cloud"],
+      http: ["https://rpc.abc.t.raas.gelato.cloud"],
     },
     default: {
-      http: ["https://rpc.chess.t.raas.gelato.cloud"],
+      http: ["https://rpc.abc.t.raas.gelato.cloud"],
     },
   },
   blockExplorers: {
     default: {
       name: "Block Scout",
-      url: "https://chess.cloud.blockscout.com/",
+      url: "https://explorer.abc.t.raas.gelato.cloud/",
     },
   },
   contracts: {},
   testnet: true,
 });
 export const wagmiConfig = createConfig({
-  chains: [chess],
+  chains: [abcTestnet],
   pollingInterval: 1000,
   transports: {
-    [chess.id]: http(),
+    [abcTestnet.id]: http(),
   },
 })
 

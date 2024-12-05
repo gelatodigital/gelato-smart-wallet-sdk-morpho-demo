@@ -10,8 +10,8 @@ export function useNFTs(userAddress: Address) {
     refetchInterval: 1000,
     queryFn: async () => {
       const collections = [
-        { contract: Ignis, name: 'IGNIS' },
-        { contract: Tyde, name: 'TYDE' }
+        { contract: Tyde, name: 'Sloth1' },
+        { contract: Ignis, name: 'Sloth2' }
       ]
 
       let allNFTs = []

@@ -2,15 +2,16 @@ import React from 'react';
 import { Address } from "viem";
 import { useNFTs } from "@/lib/useAllNfts";
 import { ExternalLink } from 'lucide-react';
+import {Ignis, Tyde} from "@/app/blockchain/contracts";
 
 const WalletCard = ({ address }: { address: string }) => {
   const { data: nfts = [], isLoading } = useNFTs(address as Address);
 
   const getExplorerLink = (collection: string, tokenId: number) => {
-    const contractAddress = collection === 'IGNIS'
-      ? '0x454ee707F0e0745b2579D715F3B796B980aF272d'
-      : '0x6F9A3AC224025B0A9E7b7F47dcb1DF7872e2fA75';
-    return `https://chess.cloud.blockscout.com/token/${contractAddress}/instance/${tokenId}`;
+    const contractAddress = collection === 'Sloth1'
+      ? Tyde.address
+      : Ignis.address;
+    return `https://explorer.abc.t.raas.gelato.cloud/token/${contractAddress}/instance/${tokenId}`;
   };
 
   return (
@@ -19,7 +20,7 @@ const WalletCard = ({ address }: { address: string }) => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Your Wallet</h2>
           <a
-            href={`https://chess.cloud.blockscout.com/address/${address}?tab=tokens_nfts`}
+            href={`https://explorer.abc.t.raas.gelato.cloud/address/${address}?tab=tokens_nfts`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors"
@@ -58,7 +59,7 @@ const WalletCard = ({ address }: { address: string }) => {
                         </p>
                         <ExternalLink size={16} className="text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
-                      <p className="text-sm md:text-xs text-zinc-400">
+                      <p className="hidden text-sm md:text-xs text-zinc-400">
                         Collection: {nft.collection}
                       </p>
                     </div>

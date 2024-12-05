@@ -185,7 +185,7 @@ export default function AvatarMarketplace({
         <>
           NFT minted successfully.{" "}
           <a
-            href={`https://chess.cloud.blockscout.com/tx/${transactionHash}`}
+            href={`https://explorer.abc.t.raas.gelato.cloud/tx/${transactionHash}`}
             target="_blank"
             className="underline underline-offset-2 hover:opacity-80"
           >
@@ -343,7 +343,7 @@ export default function AvatarMarketplace({
             <p className="text-white mb-2">Transaction Hash:</p>
             {transactionHash && (
               <a
-                href={`https://chess.cloud.blockscout.com/tx/${transactionHash}`}
+                href={`https://explorer.abc.t.raas.gelato.cloud/tx/${transactionHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#0cffff] hover:opacity-80 cursor-pointer flex items-center"

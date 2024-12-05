@@ -47,7 +47,7 @@ export default function Home({}: HomeProps) {
         <>
           Smart contract wallet generated for user.{" "}
           <a
-            href={`https://chess.cloud.blockscout.com/tx/${hash}`}
+            href={`https://explorer.abc.t.raas.gelato.cloud/tx/${hash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2 hover:opacity-80"
@@ -75,7 +75,7 @@ export default function Home({}: HomeProps) {
       <>
         Account connected:{" "}
         <a
-          href={`https://chess.cloud.blockscout.com/address/${account.address}`}
+          href={`https://explorer.abc.t.raas.gelato.cloud/address/${account.address}`}
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-2 hover:opacity-80"

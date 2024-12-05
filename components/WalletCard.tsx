@@ -14,7 +14,7 @@ const WalletCard = ({ address }: { address: string }) => {
   };
 
   return (
-    <div className="w-full h-auto px-4 sm:px-0 flex items-center justify-center pb-[150px] md:pb-0 md:pt-4">
+    <div className="w-full h-auto px-4 sm:px-0 flex items-center justify-center pb-[150px] md:pb-[50px] md:pt-4">
       <div className="w-full max-w-[1135px] bg-[#101010] rounded-lg p-4 sm:p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Your Wallet</h2>
@@ -32,47 +32,40 @@ const WalletCard = ({ address }: { address: string }) => {
             <h3 className="text-sm font-medium text-zinc-400">
               NFT Assets {!isLoading && `(${nfts.length})`}
             </h3>
-            <div className="relative">
-              <div className="h-[40vh] md:h-48 overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700">
-                <div className="space-y-3 pb-4 min-h-full">
-                  {isLoading ? (
-                    <div className="h-full flex items-center justify-center text-zinc-400 text-sm">Loading...</div>
-                  ) : nfts.length > 0 ? (
-                    nfts.map((nft, index) => (
-                      <a
-                        key={index}
-                        href={getExplorerLink(nft.collection, nft.id)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-4 p-3 rounded-md bg-zinc-800/50 hover:bg-zinc-800 transition-colors cursor-pointer group"
-                      >
-                        {nft.image && (
-                          <img
-                            src={nft.image}
-                            alt={`${nft.collection} #${nft.id}`}
-                            className="w-16 h-16 md:w-12 md:h-12 rounded-md object-cover"
-                          />
-                        )}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1">
-                            <p className="text-base md:text-sm font-medium text-white">
-                              {nft.collection} #{nft.id}
-                            </p>
-                            <ExternalLink size={16} className="text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-                          <p className="text-sm md:text-xs text-zinc-400">
-                            Collection: {nft.collection}
-                          </p>
-                        </div>
-                      </a>
-                    ))
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-zinc-400 text-sm">No NFTs found</div>
-                  )}
-                </div>
-              </div>
-              {nfts.length > 2 && (
-                <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#101010] to-transparent pointer-events-none" />
+            <div className="space-y-3">
+              {isLoading ? (
+                <div className="h-48 flex items-center justify-center text-zinc-400 text-sm">Loading...</div>
+              ) : nfts.length > 0 ? (
+                nfts.map((nft, index) => (
+                  <a
+                    key={index}
+                    href={getExplorerLink(nft.collection, nft.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-4 p-3 rounded-md bg-zinc-800/50 hover:bg-zinc-800 transition-colors cursor-pointer group"
+                  >
+                    {nft.image && (
+                      <img
+                        src={nft.image}
+                        alt={`${nft.collection} #${nft.id}`}
+                        className="w-16 h-16 md:w-12 md:h-12 rounded-md object-cover"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-1">
+                        <p className="text-base md:text-sm font-medium text-white">
+                          {nft.collection} #{nft.id}
+                        </p>
+                        <ExternalLink size={16} className="text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                      <p className="text-sm md:text-xs text-zinc-400">
+                        Collection: {nft.collection}
+                      </p>
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <div className="h-48 flex items-center justify-center text-zinc-400 text-sm">No NFTs found</div>
               )}
             </div>
           </div>

@@ -86,7 +86,7 @@ export default function AvatarMarketplace({
   const [mintedListing, setMintedListing] = useState<Listing | null>(null);
   const [selectedListing, setSelectedListing] = useState<Listing | null>(null);
   const [transactionHash, setTransactionHash] = useState("");
-  const [isMinting, setIsMinting] = useState(false);
+  const [mintingListingId, setMintingListingId] = useState<number | null>(null);
   const [isHovered, setIsHovered] = useState(false);
 
   const {
@@ -109,13 +109,15 @@ export default function AvatarMarketplace({
     setTransactionHash("");
   }, []);
 
+  const isMinting = mintingListingId !== null;
+
   const handlePurchase = useCallback(
     (listing: Listing) => {
       if (!isLoggedIn || !account) {
         addLog("User attempted to mint without logging in");
         return;
       }
-      setIsMinting(true);
+      setMintingListingId(listing.id);
       setSelectedListing(listing);
 
       const avatarName =
@@ -175,7 +177,7 @@ export default function AvatarMarketplace({
           An error has occurred while minting: {errorMessage}
         </span>
       );
-      setIsMinting(false);
+      setMintingListingId(null);
     }
   }, [mintError, addLog]);
 
@@ -196,7 +198,7 @@ export default function AvatarMarketplace({
 
       setMintedListing(selectedListing);
       setShowSuccessModal(true);
-      setIsMinting(false);
+      setMintingListingId(null);
     }
   }, [isSuccess, transactionHash, addLog, selectedListing]);
 
@@ -283,7 +285,7 @@ export default function AvatarMarketplace({
                 disabled={!isLoggedIn || isMinting}
                 className="bg-[#0cffff] text-black hover:bg-[#0cffff]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full shadow-md w-full"
               >
-                {isMinting ? (
+                {mintingListingId === listing.id ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Minting...
@@ -310,7 +312,7 @@ export default function AvatarMarketplace({
               {mintedListing?.type === "single"
                 ? mintedListing.guardian.name
                 : mintedListing?.type === "bundle"
-                  ? `${mintedListing.guardians[0].name} and ${mintedListing.guardians[1].name} bundle`
+                  ? `${mintedListing.guardians[0].name} and ${mintedListing.guardians[1].name} NFTs`
                   : ""}
               !
             </DialogDescription>

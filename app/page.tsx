@@ -17,19 +17,20 @@ export default function Home({}: HomeProps) {
   const [logs, setLogs] = useState<(string | JSX.Element)[]>([]);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
+  const addLog = useCallback((message: string | JSX.Element) => {
+    setLogs((prevLogs) => [...prevLogs, message]);
+  }, []);
+
   const { data: account } = Account.useQuery();
   const { data: hash, ...createMutation } = Account.useCreate({
     client,
+    addLog,
   });
 
   // Account Creation with Passkeys
   const loadMutation = Account.useLoad({ client });
   const isPending = createMutation.isPending || loadMutation.isPending;
   const error = createMutation.error || loadMutation.error;
-
-  const addLog = useCallback((message: string | JSX.Element) => {
-    setLogs((prevLogs) => [...prevLogs, message]);
-  }, []);
 
   const isLoggedIn = useMemo(() => !!account?.address, [account]);
 

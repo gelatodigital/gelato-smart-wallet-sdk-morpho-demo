@@ -56,13 +56,18 @@ export namespace Account {
    * Generates a new EOA and injects the ExperimentDelegation contract onto it
    * with an authorized WebAuthn public key.
    */
-  export async function create({ client }: { client: Client }) {
+  export async function create({ client, addLog }: { 
+    client: Client;
+    addLog?: (message: string | JSX.Element) => void;
+  }) {
     // Generate a new EOA. This Account will be used to inject the ExperimentDelegation
     // contract onto it.
     const account = privateKeyToAccount(generatePrivateKey())
+    addLog?.('Generate an Account (EOA) with a random private key')
 
     // Create a WebAuthn credential which will be used as an authorized key
     // for the EOA.
+    addLog?.('Prompt the end-user to create a WebAuthn key (e.g. Passkey)')
     const credential = await createCredential({
       user: {
         name: `Example Delegation (${truncate(account.address)})`,
@@ -73,12 +78,14 @@ export namespace Account {
     const publicKey = parsePublicKey(credential.publicKey)
 
     // Authorize the WebAuthn key on the EOA.
+    addLog?.('Sign an EIP-7702 Authorization to designate the ExperimentDelegation contract onto the Account')
     const hash = await authorize({
       account,
       client,
       publicKey,
     })
 
+    addLog?.('Send an EIP-7702 Transaction with the Authorization from Step 3, and authorize the WebAuthn public key on the Account')
     await waitForTransactionReceipt(client, { hash })
 
     queryClient.setQueryData(['account'], {
@@ -185,13 +192,15 @@ export namespace Account {
    * Executes calls with the delegated EOA's WebAuthn credential.
    */
   export async function execute({
-                                  account,
-                                  calls,
-                                  client,
-                                }: {
+    account,
+    calls,
+    client,
+    addLog,
+  }: {
     account: Account
     calls: Calls
     client: Client
+    addLog?: (message: string | JSX.Element) => void
   }) {
     // Fetch the next available nonce from the delegated EOA's contract.
     let nonce = await readContract(client, {
@@ -216,12 +225,12 @@ export namespace Account {
       ),
     )
 
-
     // Compute digest to sign for the execute function.
     const digest = keccak256(
       encodePacked(['uint256', 'bytes'], [nonce, calls_encoded]),
     )
 
+    addLog?.('Prompting the end-user to sign over the calls with their WebAuthn key (e.g. Passkey)')
     // Sign the digest with the authorized WebAuthn key.
     const { signature, webauthn } = await sign({
       hash: digest,
@@ -231,38 +240,19 @@ export namespace Account {
     // Extract r and s values from signature.
     const r = BigInt(slice(signature, 0, 32))
     const s = BigInt(slice(signature, 32, 64))
-    const mintCalls =  calls.map((call) =>{ return  { target: call.to as  `0x${string}`, callData:call.data as  `0x${string}`}} )
+    const mintCalls = calls.map((call) => { return { target: call.to as `0x${string}`, callData: call.data as `0x${string}` } })
 
+    addLog?.('Invoking the execute function on the Account (which proxies to the ExperimentDelegation contract) with the calls and the WebAuthn signature')
+    addLog?.('The ExperimentDelegation contract uses the RIP-7212 P256 Precompile to verify the WebAuthn signature')
 
-    //Execute calls.
-    // let hash =  await writeContract(client, {
-    //   abi: ExperimentDelegation.abi,
-    //   address: account.address,
-    //   functionName: 'execute',
-    //   args: [calls_encoded,{ r, s }, webauthn, 0],
-    //   account: null, // defer to sequencer to fill
-    // })
-
-    //   const mintCalls =  calls.map((call) =>{ return  { target: call.to as  `0x${string}`, callData:call.data as  `0x${string}`}} )
-
-    //   console.log(mintCalls)
-
-    let hash =  await writeContract(client, {
+    addLog?.('Broadcasting transaction to the Sequencer')
+    let hash = await writeContract(client, {
       abi: ExperimentDelegation.abi,
       address: account.address,
       functionName: 'aggregate',
       args: [mintCalls],
       account: null, // defer to sequencer to fill
     })
-
-    // let hash = await writeContract(client, {
-    //   abi: ExperimentDelegation.abi,
-    //   address: account.address,
-    //   functionName: "forward",
-    //   args: [account.address],
-    //   account: null, // defer to sequencer to fill
-    // });
-
 
     let rec = await waitForTransactionReceipt(client, { hash });
     return hash
@@ -278,21 +268,27 @@ export namespace Account {
     return useQuery_<Account>({ queryKey })
   }
 
-  export function useCreate({ client }: { client: Client }) {
+  export function useCreate({ client, addLog }: { 
+    client: Client;
+    addLog?: (message: string | JSX.Element) => void;
+  }) {
     return useMutation({
-      mutationFn: async () => await create({ client }),
+      mutationFn: async () => await create({ client, addLog }),
     })
   }
 
-  export function useExecute({ client }: { client: Client }) {
+  export function useExecute({ client, addLog }: { 
+    client: Client;
+    addLog?: (message: string | JSX.Element) => void;
+  }) {
     return useMutation({
       mutationFn: async ({
-                           account,
-                           calls,
-                         }: {
+        account,
+        calls,
+      }: {
         account: Account
         calls: Calls
-      }) => await execute({ account, calls, client }),
+      }) => await execute({ account, calls, client, addLog }),
     })
   }
 

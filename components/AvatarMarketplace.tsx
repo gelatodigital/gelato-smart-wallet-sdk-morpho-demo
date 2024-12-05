@@ -96,6 +96,7 @@ export default function AvatarMarketplace({
     ...executeQuery
   } = Account.useExecute({
     client,
+    addLog,
   });
 
   const receiptQuery = useWaitForTransactionReceipt({ hash: mintHash });

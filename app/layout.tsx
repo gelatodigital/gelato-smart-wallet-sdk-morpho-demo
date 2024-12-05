@@ -4,11 +4,11 @@ import Providers from "@/app/providers";
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Sloths Marketplace | ABC Stack',
-  description: 'Slots Marketplace | The first Gigagas stack for EVM Sovereign Rollups',
+  title: 'ABC Stack | Passkeys & EIP-7702 demo',
+  description: 'ABC Stack | Passkeys & EIP-7702 demo | The first Gigagas stack for EVM Sovereign Rollups',
   openGraph: {
-    title: 'Sloths Marketplace | ABC Stack',
-    description: 'Slots Marketplace | The first Gigagas stack for EVM Sovereign Rollups',
+    title: 'ABC Stack | Passkeys & EIP-7702 demo',
+    description: 'ABC Stack | Passkeys & EIP-7702 demo | The first Gigagas stack for EVM Sovereign Rollups',
     images: ['https://cdn.prod.website-files.com/672e31b60a8c3f5e53aced2d/673cc864ff13c827dfd59a02_ABC-OG%20Image-min%202.png'],
   },
   icons: {

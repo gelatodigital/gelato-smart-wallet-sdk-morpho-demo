@@ -8,6 +8,7 @@ import TerminalLog from "@/components/TerminalLog";
 import { Account } from "@/app/blockchain/account";
 import { client } from "@/app/blockchain/config";
 import { BaseError } from "viem";
+import WalletCard from "@/components/WalletCard";
 
 interface HomeProps {}
 
@@ -86,17 +87,8 @@ export default function Home({}: HomeProps) {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-      <div
-        className={`min-h-screen bg-black text-white ${
-          isTerminalOpen ? "overflow-hidden" : ""
-        }`}
-      >
-        <div
-          className={`
-            relative flex flex-col items-center
-            ${isTerminalOpen ? "h-screen overflow-y-auto" : "min-h-screen"}
-          `}
-        >
+      <div className="min-h-screen bg-black text-white">
+        <div className="relative min-h-screen pb-64">
           <Header
             showLoginDialog={showLoginDialog}
             setShowLoginDialog={setShowLoginDialog}
@@ -105,13 +97,9 @@ export default function Home({}: HomeProps) {
             addLog={addLog}
             walletAddress={account?.address}
           />
-          <div
-            className={`
-            flex-1 w-full flex flex-col items-center
-            ${isTerminalOpen ? "overflow-y-auto pb-64" : ""}
-          `}
-          >
+          <div className="flex-1 w-full flex flex-col items-center">
             <AvatarMarketplace isLoggedIn={isLoggedIn} addLog={addLog} />
+            {account?.address && <WalletCard address={account?.address} />}
           </div>
           <TerminalLog
             logs={logs}

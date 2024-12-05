@@ -25,13 +25,9 @@ import {
   parsePublicKey,
   sign,
 } from 'webauthn-p256'
-import { CHAIN_NAMESPACES, WALLET_ADAPTERS } from "@web3auth/base";
-import { Web3Auth } from "@web3auth/modal";
-import "ethers";
-import { chess, type Client, queryClient } from './config'
+
+import { type Client, queryClient } from './config'
 import { ExperimentDelegation } from './contracts'
-import { ethers } from 'ethers'
-import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 
 export namespace Account {
   /////////////////////////////////////////////////////////
@@ -61,51 +57,9 @@ export namespace Account {
    * with an authorized WebAuthn public key.
    */
   export async function create({ client }: { client: Client }) {
-    const chainConfi2 = {
-      chainId: "0xaa36a7",
-      displayName: "Ethereum Sepolia Testnet",
-      chainNamespace: CHAIN_NAMESPACES.EIP155,
-      tickerName: "Ethereum",
-      ticker: "ETH",
-      decimals: 18,
-      rpcTarget: "https://rpc.ankr.com/eth_sepolia",
-      blockExplorerUrl: "https://sepolia.etherscan.io",
-      logo: "https://cryptologos.cc/logos/polygon-matic-logo.png",
-    };
-  
-    const web3auth = new Web3Auth({
-      clientId:
-        "BFolnrXUpJ8WScbI0MHGllgsP4Jgyy9tuAyfd4rLJ0d07b1iGMhZw3Eu2E10HECY2KIqYczag4_Z4q7KsEojUWU", // get it from Web3Auth Dashboard
-      web3AuthNetwork: "sapphire_devnet",
-      chainConfig:  {
-        chainNamespace: "eip155",
-        chainId: ethers.toBeHex(chess.id),
-        rpcTarget: chess.rpcUrls.default.http[0],
-        // Avoid using public rpcTarget in production.
-        // Use services like Infura, Quicknode etc
-        displayName: chess.name as string,
-        blockExplorer: chess.blockExplorers.default.url,
-        ticker: "ETH",
-        tickerName: "ETH",
-      }
-    });
-    await web3auth!.initModal({
-      modalConfig: {
-       
-         // Disable TORUS
-         [WALLET_ADAPTERS.TORUS_EVM]: {
-          label: "torus",
-          showOnModal: false,
-        },
-      },
-    });
- 
-    const web3authProvider = await web3auth!.connect();
-    let privatekey = ("0x" +
-      (await web3auth.provider?.request({
-        method: "eth_private_key", // use "private_key" for other non-evm chains
-      }))) as "0x${string}";
-    const account = privateKeyToAccount(privatekey)
+    // Generate a new EOA. This Account will be used to inject the ExperimentDelegation
+    // contract onto it.
+    const account = privateKeyToAccount(generatePrivateKey())
 
     // Create a WebAuthn credential which will be used as an authorized key
     // for the EOA.

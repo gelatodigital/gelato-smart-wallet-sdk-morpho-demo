@@ -21,7 +21,10 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
 
   return (
     <header className="w-full bg-[#101010] py-4 px-8 flex justify-between items-center">
-      <img src="/abc.svg" alt="abc" className="w-[80px] h-[40px]" />
+     <div className="flex flex-col md:flex-row gap-x-4 items-start md:items-center">
+       <img src="/abc.svg" alt="abc" className="w-[80px] h-[40px]" />
+       <span className="text-sm flex flex-row"><span className="mr-4 hidden md:block">|</span>Passkeys & EIP-7702 demo</span>
+     </div>
       {!isLoggedIn && (
         <Button onClick={handleLogin} className="bg-[#0cffff] text-black hover:bg-[#0cffff]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full">
           Login

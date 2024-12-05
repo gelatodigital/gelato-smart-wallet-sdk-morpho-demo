@@ -242,7 +242,7 @@ export namespace Account {
     const s = BigInt(slice(signature, 32, 64))
     const mintCalls = calls.map((call) => { return { target: call.to as `0x${string}`, callData: call.data as `0x${string}` } })
 
-    addLog?.('Invoking the execute function on the Account with the calls and the WebAuthn signature...')
+    // addLog?.('Invoking the execute function on the Account with the calls and the WebAuthn signature...')
     addLog?.('Using P256 Precompile to verify the WebAuthn signature...')
 
     addLog?.('Broadcasting transaction to the Sequencer...')

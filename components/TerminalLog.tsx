@@ -18,7 +18,7 @@ export default function TerminalLog({ logs, isOpen, setIsOpen }: TerminalLogProp
   }, [logs, isOpen])
 
   return (
-    <div className={`fixed bottom-3.5 left-0 right-0 bg-black bg-opacity-80 text-green-400 font-mono text-sm transition-all duration-300 ease-in-out z-[9999] ${isOpen ? 'h-64' : 'h-14'}`}>
+    <div onClick={() => setIsOpen(!isOpen)} className={`fixed bottom-3.5 left-0 right-0 bg-black bg-opacity-80 text-green-400 font-mono text-sm transition-all duration-300 ease-in-out z-[9999] cursor-pointer ${isOpen ? 'h-64' : 'h-14'} border-t-[1px] border-t-white/15`}>
       <div className="flex justify-between items-center px-8 py-4 bg-[#101010]">
         <h3 className="text-white">Logs</h3>
         <Button

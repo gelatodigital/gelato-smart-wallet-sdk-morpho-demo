@@ -44,17 +44,17 @@ interface AvatarMarketplaceProps {
 const guardians: Guardian[] = [
   {
     id: 1,
-    name: "Tyde",
+    name: "Sloth",
     image: "/nft-1-abc.svg",
   },
   {
     id: 2,
-    name: "Ignis",
+    name: "Sloth 2",
     image: "/nft-2-abc.svg",
   },
   {
     id: 3,
-    name: "Tempest",
+    name: "Sloth 3",
     image: "/nft-1-abc.svg",
   },
   {
@@ -272,7 +272,8 @@ export default function AvatarMarketplace({
                     </div>
                   </div>
                   <h3 className="text-xl font-semibold mb-4 sm:mb-8 text-white text-center">
-                    {listing.guardians[0].name} + {listing.guardians[1].name} Bundle
+                    Sloths Bundle
+                    {/*{listing.guardians[0].name} + {listing.guardians[1].name} Bundle*/}
                   </h3>
                 </div>
               )}

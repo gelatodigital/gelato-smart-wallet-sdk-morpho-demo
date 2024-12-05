@@ -219,7 +219,7 @@ export default function AvatarMarketplace({
             <div className="flex flex-col h-full space-y-4">
               {listing.type === "single" ? (
                 <div className="flex-1">
-                  <div className="w-full h-[250px] sm:h-[325px] mb-4 sm:mb-8 overflow-hidden rounded-lg border-4 border-[#0cffff] relative bg-black">
+                  <div className="w-full h-[250px] sm:h-[325px] mb-4 sm:mb-8 overflow-hidden border-4 border-[#0cffff] relative bg-black">
                     <img
                       src={listing.guardian.image}
                       alt={listing.guardian.name}
@@ -244,7 +244,6 @@ export default function AvatarMarketplace({
                           className={`
                           h-full
                           overflow-hidden 
-                          rounded-lg 
                           border-4 
                           border-[#0cffff] 
                           absolute 
@@ -316,7 +315,7 @@ export default function AvatarMarketplace({
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-4">
             {mintedListing?.type === "single" ? (
-              <div className="w-full max-w-md aspect-[16/9] relative rounded-lg border-4 border-[#0cffff] overflow-hidden mb-4">
+              <div className="w-full max-w-md aspect-[16/9] relative border-4 border-[#0cffff] overflow-hidden mb-4">
                 <img
                   src={mintedListing.guardian.image}
                   alt={mintedListing.guardian.name}
@@ -328,7 +327,7 @@ export default function AvatarMarketplace({
                 {mintedListing.guardians.map((guardian) => (
                   <div
                     key={guardian.id}
-                    className="aspect-[16/9] relative rounded-lg border-4 border-[#00AFFA] overflow-hidden"
+                    className="aspect-[16/9] relative border-4 border-[#0cffff] overflow-hidden"
                   >
                     <img
                       src={guardian.image}

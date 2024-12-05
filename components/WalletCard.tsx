@@ -14,7 +14,7 @@ const WalletCard = ({ address }: { address: string }) => {
   };
 
   return (
-    <div className="w-full h-full md:min-h-0 px-4 sm:px-0 flex items-center justify-center pb-[150px] md:pb-0 md:pt-4">
+    <div className="w-full h-auto px-4 sm:px-0 flex items-center justify-center pb-[150px] md:pb-0 md:pt-4">
       <div className="w-full max-w-[1135px] bg-[#101010] rounded-lg p-4 sm:p-8">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Your Wallet</h2>
@@ -33,10 +33,10 @@ const WalletCard = ({ address }: { address: string }) => {
               NFT Assets {!isLoading && `(${nfts.length})`}
             </h3>
             <div className="relative">
-              <div className="h-[60vh] md:h-48 overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700">
-                <div className="space-y-3 pb-4">
+              <div className="h-[40vh] md:h-48 overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700">
+                <div className="space-y-3 pb-4 min-h-full">
                   {isLoading ? (
-                    <div className="text-zinc-400 text-sm">Loading...</div>
+                    <div className="h-full flex items-center justify-center text-zinc-400 text-sm">Loading...</div>
                   ) : nfts.length > 0 ? (
                     nfts.map((nft, index) => (
                       <a
@@ -67,7 +67,7 @@ const WalletCard = ({ address }: { address: string }) => {
                       </a>
                     ))
                   ) : (
-                    <div className="text-zinc-400 text-sm">No NFTs found</div>
+                    <div className="h-full flex items-center justify-center text-zinc-400 text-sm">No NFTs found</div>
                   )}
                 </div>
               </div>

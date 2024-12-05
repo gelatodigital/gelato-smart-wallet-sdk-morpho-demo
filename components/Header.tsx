@@ -20,8 +20,8 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
   }
 
   return (
-    <header className="w-full bg-black p-4 flex justify-between items-center">
-      <img src="/abc.svg" alt="abc" className="w-[163px] h-[40px]" />
+    <header className="w-full bg-[#101010] py-4 px-8 flex justify-between items-center">
+      <img src="/abc.svg" alt="abc" className="w-[80px] h-[40px]" />
       {!isLoggedIn && (
         <Button onClick={handleLogin} className="bg-[#0cffff] text-black hover:bg-[#0cffff]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full">
           Login

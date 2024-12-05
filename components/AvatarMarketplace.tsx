@@ -141,15 +141,15 @@ export default function AvatarMarketplace({
           },
           ...(listing.type === "bundle"
             ? [
-                {
-                  to: Ignis.address,
-                  data: encodeFunctionData({
-                    abi: Ignis.abi,
-                    functionName: "mint",
-                    args: [account.address],
-                  }),
-                },
-              ]
+              {
+                to: Ignis.address,
+                data: encodeFunctionData({
+                  abi: Ignis.abi,
+                  functionName: "mint",
+                  args: [account.address],
+                }),
+              },
+            ]
             : []),
         ],
       });
@@ -206,93 +206,94 @@ export default function AvatarMarketplace({
   }, [mintHash]);
 
   return (
-    <div className="p-8 bg-black w-full max-w-[1200px]">
+    <div className="p-4 sm:p-8 bg-black w-full max-w-[1200px] pb-[150px] md:pb-0">
       <h2 className="text-2xl font-bold mb-8 text-center text-white drop-shadow-md">
         Sloths Marketplace
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
         {listings.map((listing) => (
           <div
             key={listing.id}
-            className="w-full bg-[#101010] p-8 rounded-lg text-center shadow-lg transform hover:scale-105 transition-transform duration-200 flex flex-col h-full"
+            className="w-full bg-[#101010] p-4 sm:p-8 rounded-lg shadow-lg transform hover:scale-105 transition-transform duration-200"
           >
-            {listing.type === "single" ? (
-              <div>
-                <div className="w-full h-[325px] mb-8 overflow-hidden rounded-lg border-4 border-[#00AFFA] relative bg-black">
-                  <img
-                    src={listing.guardian.image}
-                    alt={listing.guardian.name}
-                    className="w-full h-full object-contain bg-black"
-                  />
-                </div>
-                <h3 className="text-xl font-semibold mb-8 text-white">
-                  {listing.guardian.name}
-                </h3>
-              </div>
-            ) : (
-              <div>
-                <div
-                  onMouseEnter={() => setIsHovered(true)}
-                  onMouseLeave={() => setIsHovered(false)}
-                  className="w-full h-[325px] mb-8"
-                >
-                  <div className="relative w-full h-full">
-                    {listing.guardians.map((guardian, index) => (
-                      <div
-                        key={guardian.id}
-                        className={`
-                        h-[325px]
-                        overflow-hidden 
-                        rounded-lg 
-                        border-4 
-                        border-[#00AFFA] 
-                        absolute 
-                        w-full
-                        transition-all 
-                        duration-500
-                        bg-black
-                        ${
-                          isHovered
-                            ? index === 0
-                              ? "z-10 translate-x-4 translate-y-4"
-                              : "z-20 -translate-x-4 -translate-y-4"
-                            : index === 0
-                            ? "z-20 -translate-x-4 -translate-y-4"
-                            : "z-10 translate-x-4 translate-y-4"
-                        }
-                      `}
-                      >
-                        <img
-                          src={guardian.image}
-                          alt={guardian.name}
-                          className="w-full h-full object-contain bg-black"
-                        />
-                      </div>
-                    ))}
+            <div className="flex flex-col h-full space-y-4">
+              {listing.type === "single" ? (
+                <div className="flex-1">
+                  <div className="w-full h-[250px] sm:h-[325px] mb-4 sm:mb-8 overflow-hidden rounded-lg border-4 border-[#00AFFA] relative bg-black">
+                    <img
+                      src={listing.guardian.image}
+                      alt={listing.guardian.name}
+                      className="w-full h-full object-contain bg-black"
+                    />
                   </div>
-                  <h3 className="text-xl font-semibold mb-8 text-white text-center mt-8">
-                    {listing.guardians[0].name} + {listing.guardians[1].name}{" "}
-                    Bundle
+                  <h3 className="text-xl font-semibold mb-4 sm:mb-8 text-white text-center">
+                    {listing.guardian.name}
                   </h3>
                 </div>
-              </div>
-            )}
-            <Button
-              onClick={() => handlePurchase(listing)}
-              disabled={!isLoggedIn || isMinting}
-              className="bg-[#00AFFA] text-black hover:bg-[#00AFFA]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full shadow-md w-full mt-auto"
-            >
-              {isMinting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Minting...
-                </>
-              ) : listing.type === "single" ? (
-                "Mint NFT"
               ) : (
-                "Mint NFTs"
+                <div className="flex-1">
+                  <div
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    className="w-full h-[250px] sm:h-[325px] mb-4 sm:mb-8"
+                  >
+                    <div className="relative w-full h-full">
+                      {listing.guardians.map((guardian, index) => (
+                        <div
+                          key={guardian.id}
+                          className={`
+                          h-full
+                          overflow-hidden 
+                          rounded-lg 
+                          border-4 
+                          border-[#00AFFA] 
+                          absolute 
+                          w-full
+                          transition-all 
+                          duration-500
+                          bg-black
+                          ${
+                            isHovered
+                              ? index === 0
+                                ? "z-10 translate-x-4 translate-y-4"
+                                : "z-20 -translate-x-4 -translate-y-4"
+                              : index === 0
+                                ? "z-20 -translate-x-4 -translate-y-4"
+                                : "z-10 translate-x-4 translate-y-4"
+                          }
+                        `}
+                        >
+                          <img
+                            src={guardian.image}
+                            alt={guardian.name}
+                            className="w-full h-full object-contain bg-black"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <h3 className="text-xl font-semibold mb-4 sm:mb-8 text-white text-center">
+                    {listing.guardians[0].name} + {listing.guardians[1].name} Bundle
+                  </h3>
+                </div>
               )}
-            </Button>
+              <Button
+                onClick={() => handlePurchase(listing)}
+                disabled={!isLoggedIn || isMinting}
+                className="bg-[#00AFFA] text-black hover:bg-[#00AFFA]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full shadow-md w-full"
+              >
+                {isMinting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Minting...
+                  </>
+                ) : listing.type === "single" ? (
+                  "Mint NFT"
+                ) : (
+                  "Mint NFTs"
+                )}
+              </Button>
+            </div>
           </div>
         ))}
       </div>
@@ -308,8 +309,8 @@ export default function AvatarMarketplace({
               {mintedListing?.type === "single"
                 ? mintedListing.guardian.name
                 : mintedListing?.type === "bundle"
-                ? `${mintedListing.guardians[0].name} and ${mintedListing.guardians[1].name} bundle`
-                : ""}
+                  ? `${mintedListing.guardians[0].name} and ${mintedListing.guardians[1].name} bundle`
+                  : ""}
               !
             </DialogDescription>
           </DialogHeader>

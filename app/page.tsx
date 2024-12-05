@@ -45,14 +45,14 @@ export default function Home({}: HomeProps) {
     if (hash) {
       addLog(
         <>
-          Smart contract wallet generated for user.{" "}
+          Wallet generated.{" "}
           <a
             href={`https://explorer.abc.t.raas.gelato.cloud/tx/${hash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2 hover:opacity-80"
           >
-            open on explorer
+            Open on explorer.
           </a>
         </>
       );

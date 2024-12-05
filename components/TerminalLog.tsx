@@ -33,7 +33,7 @@ export default function TerminalLog({ logs, isOpen, setIsOpen }: TerminalLogProp
       <div className={`p-4 overflow-y-auto ${isOpen ? 'h-52' : 'h-0'}`}>
         {logs?.map((log: string | JSX.Element, index: number) => (
           <p key={index} className="mb-1">
-            <span className="text-blue-400">[{new Date().toISOString()}]</span> {log}
+            <span className="text-blue-400">{`>`}</span> {log}
           </p>
         ))}
         <div ref={logEndRef} />

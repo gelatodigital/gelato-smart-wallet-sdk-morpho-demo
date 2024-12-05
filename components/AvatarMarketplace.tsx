@@ -189,7 +189,7 @@ export default function AvatarMarketplace({
             target="_blank"
             className="underline underline-offset-2 hover:opacity-80"
           >
-            open on explorer
+            Open on explorer.
           </a>
         </>
       );

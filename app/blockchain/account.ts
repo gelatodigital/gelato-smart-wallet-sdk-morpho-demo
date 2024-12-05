@@ -63,11 +63,11 @@ export namespace Account {
     // Generate a new EOA. This Account will be used to inject the ExperimentDelegation
     // contract onto it.
     const account = privateKeyToAccount(generatePrivateKey())
-    addLog?.('Generate an Account (EOA) with a random private key')
+    addLog?.('Generating a new Account with a random private key...')
 
     // Create a WebAuthn credential which will be used as an authorized key
     // for the EOA.
-    addLog?.('Prompt the end-user to create a WebAuthn key (e.g. Passkey)')
+    addLog?.('Creating a WebAuthn key (Passkey) for secure authentication...')
     const credential = await createCredential({
       user: {
         name: `Example Delegation (${truncate(account.address)})`,
@@ -78,14 +78,14 @@ export namespace Account {
     const publicKey = parsePublicKey(credential.publicKey)
 
     // Authorize the WebAuthn key on the EOA.
-    addLog?.('Sign an EIP-7702 Authorization to designate the ExperimentDelegation contract onto the Account')
+    addLog?.('Signing authorization to set up the delegation contract...')
     const hash = await authorize({
       account,
       client,
       publicKey,
     })
 
-    addLog?.('Send an EIP-7702 Transaction with the Authorization from Step 3, and authorize the WebAuthn public key on the Account')
+    addLog?.('Finalizing setup by sending the authorization transaction...')
     await waitForTransactionReceipt(client, { hash })
 
     queryClient.setQueryData(['account'], {
@@ -230,7 +230,7 @@ export namespace Account {
       encodePacked(['uint256', 'bytes'], [nonce, calls_encoded]),
     )
 
-    addLog?.('Prompting the end-user to sign over the calls with their WebAuthn key (e.g. Passkey)')
+    addLog?.('Prompting the end-user to sign over the calls with their WebAuthn key(Passkey)')
     // Sign the digest with the authorized WebAuthn key.
     const { signature, webauthn } = await sign({
       hash: digest,
@@ -242,10 +242,10 @@ export namespace Account {
     const s = BigInt(slice(signature, 32, 64))
     const mintCalls = calls.map((call) => { return { target: call.to as `0x${string}`, callData: call.data as `0x${string}` } })
 
-    addLog?.('Invoking the execute function on the Account (which proxies to the ExperimentDelegation contract) with the calls and the WebAuthn signature')
-    addLog?.('The ExperimentDelegation contract uses the RIP-7212 P256 Precompile to verify the WebAuthn signature')
+    addLog?.('Invoking the execute function on the Account with the calls and the WebAuthn signature...')
+    addLog?.('Using P256 Precompile to verify the WebAuthn signature...')
 
-    addLog?.('Broadcasting transaction to the Sequencer')
+    addLog?.('Broadcasting transaction to the Sequencer...')
     let hash = await writeContract(client, {
       abi: ExperimentDelegation.abi,
       address: account.address,

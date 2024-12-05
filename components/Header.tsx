@@ -15,7 +15,7 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
 
   const handleLogin = () => {
     setShowLoginDialog(true)
-    addLog('User clicked Log in.')
+    // addLog('User clicked Log in.')
     onLogin()
   }
 
@@ -32,7 +32,7 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
       )}
       {isLoggedIn && (
   <div className="flex items-center">
-    <span className="text-[#0cffff] font-semibold mr-2">Logged In</span>
+    {/* <span className="text-[#0cffff] font-semibold mr-2">Logged In</span> */}
     {walletAddress && (
       <a target={"_blank"} href={`https://explorer.abc.t.raas.gelato.cloud/address/${walletAddress}`} className="text-white hover:text-[#00AFFA]/80 transition-colors duration-200">
         {shortenAddress(walletAddress)}

@@ -12,7 +12,7 @@ import { ExternalLink, Loader2 } from "lucide-react";
 import { shortenAddress } from "@/app/blockchain/utils";
 import { BaseError, encodeFunctionData } from "viem";
 import { Account } from "@/app/blockchain/account";
-import { client } from "@/app/blockchain/config";
+import {chainConfig, client} from "@/app/blockchain/config";
 import { useWaitForTransactionReceipt } from "wagmi";
 import { Ignis, Tyde } from "@/app/blockchain/contracts";
 
@@ -187,7 +187,7 @@ export default function AvatarMarketplace({
         <>
           NFT minted successfully.{" "}
           <a
-            href={`https://chess.cloud.blockscout.com/tx/${transactionHash}`}
+            href={`${chainConfig.blockExplorerUrl}tx/${transactionHash}`}
             target="_blank"
             className="underline underline-offset-2 hover:opacity-80"
           >
@@ -345,7 +345,7 @@ export default function AvatarMarketplace({
             <p className="text-white mb-2">Transaction Hash:</p>
             {transactionHash && (
               <a
-                href={`https://chess.cloud.blockscout.com/tx/${transactionHash}`}
+                href={`${chainConfig.blockExplorerUrl}tx/${transactionHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[#00AEFA] hover:opacity-80 cursor-pointer flex items-center"

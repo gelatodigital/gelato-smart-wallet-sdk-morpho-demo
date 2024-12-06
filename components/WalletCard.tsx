@@ -3,15 +3,16 @@ import { Address } from "viem";
 import { useNFTs } from "@/lib/useAllNfts";
 import { ExternalLink } from 'lucide-react';
 import {Ignis, Tyde} from "@/app/blockchain/contracts";
+import {chainConfig} from "@/app/blockchain/config";
 
-const WalletCard = ({ address }: { address: string }) => {
+const WalletCard = ({ address, onClaimTokens }: { address?: string, onClaimTokens: () => void }) => {
   const { data: nfts = [], isLoading } = useNFTs(address as Address);
 
   const getExplorerLink = (collection: string, tokenId: number) => {
     const contractAddress = collection === 'Sloth1'
       ? Tyde.address
       : Ignis.address;
-    return `https://chess.cloud.blockscout.com/token/${contractAddress}/instance/${tokenId}`;
+    return `${chainConfig.blockExplorerUrl}token/${contractAddress}/instance/${tokenId}`;
   };
 
   return (
@@ -20,7 +21,7 @@ const WalletCard = ({ address }: { address: string }) => {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold text-white">Your Wallet</h2>
           <a
-            href={`https://chess.cloud.blockscout.com/address/${address}?tab=tokens_nfts`}
+            href={`${chainConfig.blockExplorerUrl}address/${address}?tab=tokens_nfts`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-sm text-zinc-400 hover:text-white transition-colors"
@@ -31,7 +32,7 @@ const WalletCard = ({ address }: { address: string }) => {
         <div className="space-y-4">
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-zinc-400">
-              NFT Assets {!isLoading && `(${nfts.length})`}
+              Assets
             </h3>
             <div className="space-y-3">
               {isLoading ? (
@@ -66,7 +67,15 @@ const WalletCard = ({ address }: { address: string }) => {
                   </a>
                 ))
               ) : (
-                <div className="h-48 flex items-center justify-center text-zinc-400 text-sm">No NFTs found</div>
+                <div className="h-48 flex items-center justify-center text-zinc-400 text flex-col gap-y-2">
+                  No assets found
+                  <button
+                    onClick={onClaimTokens}
+                    className="text-white text-sm font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB]"
+                  >
+                    Claim Tokens
+                  </button>
+                </div>
               )}
             </div>
           </div>

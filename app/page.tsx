@@ -316,10 +316,10 @@ export default function Home({}: HomeProps) {
       } else {
         const hostnameParts = window.location.hostname.split(".");
         if (hostnameParts.length >= 2) {
-          setRpID("eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app");
+          setRpID("anichess-social-relay-demo.gelato.network");
           setRpName(window.location.hostname);
         } else {
-          setRpID("eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app");
+          setRpID("anichess-social-relay-demo.gelato.network");
           setRpName(window.location.hostname);
         }
       }
@@ -335,7 +335,7 @@ export default function Home({}: HomeProps) {
           privateKeyProvider: ethereumPrivateKeyProvider,
         });
         const plugin = new PasskeysPlugin({
-          rpID:"eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app",
+          rpID:"anichess-social-relay-demo.gelato.network",
           rpName,
           buildEnv: "staging",// "production",
         });

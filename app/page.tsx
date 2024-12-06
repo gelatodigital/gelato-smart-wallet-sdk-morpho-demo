@@ -34,7 +34,7 @@ const tokenDetails = {
   abi:["function drop() external"]
 }
 
-const verifier = "w3a-sfa-web-google";
+const verifier = "w3a-sfa-web-gelato";
 
 export default function Home({}: HomeProps) {
   const [logs, setLogs] = useState<(string | JSX.Element)[]>([]);
@@ -310,6 +310,7 @@ export default function Home({}: HomeProps) {
   useEffect(() => {
     const init = async () => {
       if (window.location.hostname === "localhost") {
+        console.log('AQUIII')
         setRpID("localhost");
         setRpName("localhost");
       } else {
@@ -328,17 +329,18 @@ export default function Home({}: HomeProps) {
         });
         // Initialising Web3Auth Single Factor Auth SDK
         const web3authSfa = new Web3Auth({
-          clientId: "BPi5PB_UiIZ-cPz1GtV5i1I2iOSOHuimiXBI0e-Oe_u6X3oVAbCiAZOTEBtTXw4tsluTITPqA8zMsfxIKMjiqNQ", // Get your Client ID from Web3Auth Dashboard
-          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_MAINNET, // ["sapphire_mainnet", "sapphire_devnet", "mainnet", "cyan", "aqua", and "testnet"]
+          clientId: "BGlfNOldMcUkLHqHiM4HyAEn-Uvq-6RIwvfbjPBCW0YD1TkfaNKGiizmGV6EHnB63RpQS518LOCw0OdfNmyRoa8", // Get your Client ID from Web3Auth Dashboard
+          web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET, // ["sapphire_mainnet", "sapphire_devnet", "mainnet", "cyan", "aqua", and "testnet"]
           usePnPKey: false, // Setting this to true returns the same key as PnP Web SDK, By default, this SDK returns CoreKitKey.
           privateKeyProvider: ethereumPrivateKeyProvider,
         });
         const plugin = new PasskeysPlugin({
           rpID,
           rpName,
-          buildEnv: "production",
+          buildEnv: "staging",
         });
         web3authSfa?.addPlugin(plugin);
+        console.log(plugin)
         setPkPlugin(plugin);
         const wsPlugin = new WalletServicesPlugin({
           walletInitOptions: {

@@ -7,7 +7,7 @@ import {GoogleOAuthProvider} from "@react-oauth/google";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <GoogleOAuthProvider clientId="519228911939-cri01h55lsjbsia1k7ll6qpalrus75ps.apps.googleusercontent.com">
+    <GoogleOAuthProvider clientId="563235730494-08l7rq3qmansovo8h918ql7plli45ct3.apps.googleusercontent.com">
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           {children}

@@ -25,7 +25,7 @@ import {createPublicClient} from "viem";
 import {http} from "wagmi";
 import { CredentialResponse, googleLogout } from "@react-oauth/google";
 import UserProfile from "@/components/UserProfile";
-import {Contract} from "web3";
+import {Contract} from "ethers";
 import {EmptyState} from "@/components/EmptyState";
 
 interface HomeProps {}
@@ -59,12 +59,6 @@ export default function Home({}: HomeProps) {
   const addLog = useCallback((message: string | JSX.Element) => {
     setLogs((prevLogs) => [...prevLogs, message]);
   }, []);
-
-  const handleLogin = useCallback(() => {
-    // if (!isLoggedIn) {
-      addLog("Account creation request initiated by user.");
-    // }
-  }, [addLog]);
 
   const onSuccess = async (response: CredentialResponse) => {
     try {
@@ -122,7 +116,6 @@ export default function Home({}: HomeProps) {
   };
 
   const listAllPasskeys = async (pkPlugin:PasskeysPlugin) => {
-    console.log(221)
     if (!pkPlugin) {
       addLog("plugin not initialized yet");
       return;
@@ -141,8 +134,6 @@ export default function Home({}: HomeProps) {
     }
     const getUserInfo = await web3authSFAuth.getUserInfo();
     let passkeys =  await listAllPasskeys(pkPlugin);
-
-    console.log("Pass Keys", passkeys)
 
     return { name: getUserInfo.name!, email:getUserInfo.email!, image: getUserInfo?.profileImage, passkeys:passkeys ?? []}
   };
@@ -220,12 +211,12 @@ export default function Home({}: HomeProps) {
       entryPoint,
       kernelVersion,
     });
-    console.log("My account:", account.address);
 
     setSmartAccount(account)
+    addLog(`Smart account ready to use: ${account?.address}`);
     let deployed = await account.isDeployed()
+    addLog(`Account is deployed: ${deployed}`);
     setIsDeployed(deployed)
-    console.log(deployed, 324)
     const kernelClient = createKernelAccountClient({
       account,
       chain: {
@@ -282,7 +273,6 @@ export default function Home({}: HomeProps) {
       const res = await pkPlugin.registerPasskey({
         username: `google|${userInfo?.email || userInfo?.name} - ${new Date().toLocaleDateString("en-GB")}`,
       });
-      console.log("res", res);
       if (res) addLog("Passkey saved successfully");
       let user = await getUserInfo(web3authSFAuth, pkPlugin)
       setUser(user as any);
@@ -306,7 +296,7 @@ export default function Home({}: HomeProps) {
       maxFeePerGas: BigInt(0),
       maxPriorityFeePerGas: BigInt(0),
     });
-    console.log(userOpHash)
+    addLog(`Tokens claimed successfully! Transaction: ${userOpHash}`);
   }
 
   useEffect(() => {
@@ -341,7 +331,6 @@ export default function Home({}: HomeProps) {
           buildEnv: "staging",// "production",
         });
         web3authSfa?.addPlugin(plugin);
-        console.log(plugin)
         setPkPlugin(plugin);
         const wsPlugin = new WalletServicesPlugin({
           walletInitOptions: {
@@ -354,13 +343,13 @@ export default function Home({}: HomeProps) {
         web3authSfa?.addPlugin(wsPlugin);
         setWsPlugin(wsPlugin);
         web3authSfa.on(ADAPTER_EVENTS.CONNECTED, (data) => {
-          console.log("sfa:connected", data);
-          console.log("sfa:state", web3authSfa?.state);
+          // console.log("sfa:connected", data);
+          // console.log("sfa:state", web3authSfa?.state);
           createKernelObject(web3authSfa,plugin)
           setProvider(web3authSfa.provider);
         });
         web3authSfa.on(ADAPTER_EVENTS.DISCONNECTED, () => {
-          console.log("sfa:disconnected");
+          // console.log("sfa:disconnected");
           setProvider(null);
         });
         await web3authSfa.init();
@@ -379,7 +368,9 @@ export default function Home({}: HomeProps) {
         <div className="relative min-h-screen pb-0">
           <Header
             isLoggedIn={!!user}
-            onLogin={handleLogin}
+            onLogin={() => {
+              addLog("Account creation request initiated by user.");
+            }}
             addLog={addLog}
             walletAddress={smartAccount?.address}
             onSuccess={onSuccess}
@@ -396,6 +387,7 @@ export default function Home({}: HomeProps) {
                   <br/>
                   <UserProfile address={smartAccount?.address} user={user} onRegisterPasskey={registerPasskey}/>
                   <WalletCard address={smartAccount?.address} onClaimTokens={() => {
+                    addLog("Claiming tokens...");
                     dropToken(signer, smartAccount, kernel as any, () => {
                     })
                   }} />

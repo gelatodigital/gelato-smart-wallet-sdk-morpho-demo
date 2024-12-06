@@ -68,6 +68,7 @@ export default function Header({
                     width="100%"
                     useOneTap={false}
                     text="continue_with"
+                    click_listener={onLogin}
                     onSuccess={onSuccess}
                     onError={() => {
                       console.log('Error');

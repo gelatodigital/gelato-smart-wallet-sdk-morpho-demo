@@ -26,6 +26,7 @@ import {http} from "wagmi";
 import { CredentialResponse, googleLogout } from "@react-oauth/google";
 import UserProfile from "@/components/UserProfile";
 import {Contract} from "web3";
+import {EmptyState} from "@/components/EmptyState";
 
 interface HomeProps {}
 
@@ -316,11 +317,11 @@ export default function Home({}: HomeProps) {
       } else {
         const hostnameParts = window.location.hostname.split(".");
         if (hostnameParts.length >= 2) {
-          setRpID(hostnameParts.slice(-2).join("."));
-          setRpName(window.location.hostname);
+          setRpID("eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app");
+          setRpName("eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app");
         } else {
-          setRpID(window.location.hostname);
-          setRpName(window.location.hostname);
+          setRpID("eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app");
+          setRpName("eip7702-next-demo-git-anychess-social-relay-passkeys-gelato.vercel.app");
         }
       }
       try {
@@ -377,7 +378,7 @@ export default function Home({}: HomeProps) {
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
       <div className="min-h-screen bg-black text-white">
-        <div className="relative min-h-screen pb-64">
+        <div className="relative min-h-screen pb-0">
           <Header
             isLoggedIn={!!user}
             onLogin={handleLogin}
@@ -390,22 +391,19 @@ export default function Home({}: HomeProps) {
             setOpen={setOpen}
           />
           <div className="flex-1 w-full h-full flex flex-col items-center">
-            <br />
-            {!user && (
-              <div className="flex-1 w-full h-[calc(100vh-64px)] flex flex-col items-center justify-center gap-4 py-6">
-                <span className="text-xl font-semibold mb-8">Passkeys, Relay and Social demo</span>
-                <img
-                  src="https://anichess.com/static/media/story-1.e83a88a7bfa4d1fbcad8.png"
-                  alt="Anichess"
-                  className="w-[50%] opacity-50"
-                />
-              </div>
-            )}
-            {!!user && <UserProfile address={smartAccount?.address} user={user} onRegisterPasskey={registerPasskey}/>}
-            {!!user && <WalletCard address={smartAccount?.address} onClaimTokens={() => {
-              dropToken(signer, smartAccount, kernel as any, () => {
-              })
-            }} />}
+            {!user && <EmptyState />}
+            {
+              !!user && (
+                <>
+                  <br/>
+                  <UserProfile address={smartAccount?.address} user={user} onRegisterPasskey={registerPasskey}/>
+                  <WalletCard address={smartAccount?.address} onClaimTokens={() => {
+                    dropToken(signer, smartAccount, kernel as any, () => {
+                    })
+                  }} />
+                </>
+              )
+            }
           </div>
           <TerminalLog
             logs={logs}

@@ -36,6 +36,7 @@ export default function TerminalLog({ logs, isOpen, setIsOpen }: TerminalLogProp
             <span className="text-blue-400">{`>`}</span> {log}
           </p>
         ))}
+        <br />
         <div ref={logEndRef} />
       </div>
     </div>

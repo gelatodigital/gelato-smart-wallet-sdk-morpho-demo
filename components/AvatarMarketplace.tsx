@@ -44,18 +44,18 @@ interface AvatarMarketplaceProps {
 const guardians: Guardian[] = [
   {
     id: 1,
-    name: "Sloth",
-    image: "/nft-1-abc.svg",
+    name: "Tyde",
+    image: "https://anichess.com/static/media/story-6.50b7eb8fe21bc74b8710.png",
   },
   {
     id: 2,
-    name: "Sloth 2",
-    image: "/nft-2-abc.svg",
+    name: "Ignis",
+    image: "https://anichess.com/static/media/story-7.92adc9badf10d5ee1d7f.png",
   },
   {
     id: 3,
-    name: "Sloth 3",
-    image: "/nft-1-abc.svg",
+    name: "Tempest",
+    image: "https://anichess.com/static/media/story-8.bbb546d81d8815bb5b28.png",
   },
   {
     id: 4,
@@ -187,7 +187,7 @@ export default function AvatarMarketplace({
         <>
           NFT minted successfully.{" "}
           <a
-            href={`https://explorer.abc.t.raas.gelato.cloud/tx/${transactionHash}`}
+            href={`https://chess.cloud.blockscout.com/tx/${transactionHash}`}
             target="_blank"
             className="underline underline-offset-2 hover:opacity-80"
           >
@@ -222,7 +222,7 @@ export default function AvatarMarketplace({
             <div className="flex flex-col h-full space-y-4">
               {listing.type === "single" ? (
                 <div className="flex-1">
-                  <div className="w-full h-[250px] sm:h-[325px] mb-4 sm:mb-8 overflow-hidden border-4 border-[#0cffff] relative bg-black">
+                  <div className="w-full h-[250px] sm:h-[325px] mb-4 sm:mb-8 overflow-hidden border-4 border-[#00AEFA] relative bg-black">
                     <img
                       src={listing.guardian.image}
                       alt={listing.guardian.name}
@@ -248,7 +248,7 @@ export default function AvatarMarketplace({
                           h-full
                           overflow-hidden 
                           border-4 
-                          border-[#0cffff] 
+                          border-[#00AEFA] 
                           absolute 
                           w-full
                           transition-all 
@@ -283,7 +283,7 @@ export default function AvatarMarketplace({
               <Button
                 onClick={() => handlePurchase(listing)}
                 disabled={!isLoggedIn || isMinting}
-                className="bg-[#0cffff] text-black hover:bg-[#0cffff]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full shadow-md w-full"
+                className="bg-[#00AEFA] text-black hover:bg-[#00AEFA]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full shadow-md w-full"
               >
                 {mintingListingId === listing.id ? (
                   <>
@@ -302,9 +302,9 @@ export default function AvatarMarketplace({
       </div>
 
       <Dialog open={showSuccessModal} onOpenChange={closeSuccessModal}>
-        <DialogContent className="bg-black border-2 border-[#0cffff] z-[99999]">
+        <DialogContent className="bg-black border-2 border-[#00AEFA] z-[99999]">
           <DialogHeader>
-            <DialogTitle className="text-[#0cffff]">
+            <DialogTitle className="text-[#00AEFA]">
               Congratulations!
             </DialogTitle>
             <DialogDescription className="text-white">
@@ -319,7 +319,7 @@ export default function AvatarMarketplace({
           </DialogHeader>
           <div className="flex flex-col items-center justify-center p-4">
             {mintedListing?.type === "single" ? (
-              <div className="w-full max-w-md aspect-[16/9] relative border-4 border-[#0cffff] overflow-hidden mb-4">
+              <div className="w-full max-w-md aspect-[16/9] relative border-4 border-[#00AEFA] overflow-hidden mb-4">
                 <img
                   src={mintedListing.guardian.image}
                   alt={mintedListing.guardian.name}
@@ -331,7 +331,7 @@ export default function AvatarMarketplace({
                 {mintedListing.guardians.map((guardian) => (
                   <div
                     key={guardian.id}
-                    className="aspect-[16/9] relative border-4 border-[#0cffff] overflow-hidden"
+                    className="aspect-[16/9] relative border-4 border-[#00AEFA] overflow-hidden"
                   >
                     <img
                       src={guardian.image}
@@ -345,10 +345,10 @@ export default function AvatarMarketplace({
             <p className="text-white mb-2">Transaction Hash:</p>
             {transactionHash && (
               <a
-                href={`https://explorer.abc.t.raas.gelato.cloud/tx/${transactionHash}`}
+                href={`https://chess.cloud.blockscout.com/tx/${transactionHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#0cffff] hover:opacity-80 cursor-pointer flex items-center"
+                className="text-[#00AEFA] hover:opacity-80 cursor-pointer flex items-center"
               >
                 {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
                 <ExternalLink className="ml-2 w-4 h-4" />

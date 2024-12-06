@@ -47,7 +47,7 @@ export default function Home({}: HomeProps) {
         <>
           Wallet generated.{" "}
           <a
-            href={`https://explorer.abc.t.raas.gelato.cloud/tx/${hash}`}
+            href={`https://chess.cloud.blockscout.com/tx/${hash}`}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2 hover:opacity-80"
@@ -75,7 +75,7 @@ export default function Home({}: HomeProps) {
       <>
         Account connected:{" "}
         <a
-          href={`https://explorer.abc.t.raas.gelato.cloud/address/${account.address}`}
+          href={`https://chess.cloud.blockscout.com/address/${account.address}`}
           target="_blank"
           rel="noopener noreferrer"
           className="underline underline-offset-2 hover:opacity-80"
@@ -101,11 +101,6 @@ export default function Home({}: HomeProps) {
           <div className="flex-1 w-full flex flex-col items-center">
             <AvatarMarketplace isLoggedIn={isLoggedIn} addLog={addLog} />
             {account?.address && <WalletCard address={account?.address} />}
-            {/* footer with two links one to ABC another one to Deploy your ABC chain */}
-            <div className="flex flex-row justify-end items-center gap-x-4 text-sm mt-5">
-              <a href="https://abundance.xyz" target="_blank" rel="noopener noreferrer">Abundance.xyz</a> - 
-              <a href="https://raas.gelato.network/rollups/request?type=1click&name=strike-perfect-lead&stack=abc&dal=celestia&sl=ethereum&env=testnet&nativeToken=eth&modules=" target="_blank" rel="noopener noreferrer">Deploy your ABC chain</a>
-            </div>
           </div>
           <TerminalLog
             logs={logs}

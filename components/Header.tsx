@@ -21,20 +21,21 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
 
   return (
     <header className="w-full bg-[#101010] py-4 px-8 flex justify-between items-center">
-     <div className="flex flex-col md:flex-row gap-x-4 items-start md:items-center">
-       <img src="/abc.svg" alt="abc" className="w-[80px] h-[40px]" />
-       <span className="text-sm flex flex-row"><span className="mr-4 hidden md:block">|</span>Passkeys & EIP-7702 demo</span>
-     </div>
+      <div className="flex flex-col md:flex-row gap-x-4 items-start md:items-center">
+        <img src="/anichess.svg" alt="Anichess" className="w-[163px] h-[40px]"/>
+        <span className="text-sm flex flex-row"><span className="mr-4 hidden md:block">|</span>Passkeys & EIP-7702 demo</span>
+      </div>
       {!isLoggedIn && (
-        <Button onClick={handleLogin} className="bg-[#0cffff] text-black hover:bg-[#0cffff]/80 transition-colors duration-200 font-semibold px-6 py-2 rounded-full">
-          Login
+        <Button onClick={handleLogin}
+                className="text-white font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB]">
+          LOGIN
         </Button>
       )}
       {isLoggedIn && (
   <div className="flex items-center">
-    {/* <span className="text-[#0cffff] font-semibold mr-2">Logged In</span> */}
+    {/* <span className="text-[#00AEFA] font-semibold mr-2">Logged In</span> */}
     {walletAddress && (
-      <a target={"_blank"} href={`https://explorer.abc.t.raas.gelato.cloud/address/${walletAddress}`} className="text-white hover:text-[#00AFFA]/80 transition-colors duration-200">
+      <a target={"_blank"} href={`https://chess.cloud.blockscout.com/address/${walletAddress}`} className="text-white hover:text-[#00AFFA]/80 transition-colors duration-200">
         {shortenAddress(walletAddress)}
       </a>
     )}
@@ -42,9 +43,9 @@ export default function Header({ isLoggedIn, onLogin, addLog, walletAddress, set
 )}
 
       <Dialog open={showLoginDialog} onOpenChange={setShowLoginDialog}>
-        <DialogContent className="bg-black border-2 border-[#0cffff]">
+        <DialogContent className="bg-black border-2 border-[#00AEFA]">
           <DialogHeader>
-            <DialogTitle className="text-[#0cffff]">Logging in...</DialogTitle>
+            <DialogTitle className="text-[#00AEFA]">Logging in...</DialogTitle>
             <DialogDescription className="text-white">
               Please wait while we authenticate your account.
             </DialogDescription>

@@ -311,7 +311,6 @@ export default function Home({}: HomeProps) {
   useEffect(() => {
     const init = async () => {
       if (window.location.hostname === "localhost") {
-        console.log('AQUIII')
         setRpID("localhost");
         setRpName("localhost");
       } else {

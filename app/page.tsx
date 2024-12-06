@@ -383,7 +383,7 @@ export default function Home({}: HomeProps) {
             walletAddress={smartAccount?.address}
             onSuccess={onSuccess}
             handleLogout={logout}
-            onPasskeyLogin={() => {}}
+            onPasskeyLogin={loginWithPasskey}
             open={open}
             setOpen={setOpen}
           />

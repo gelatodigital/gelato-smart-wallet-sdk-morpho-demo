@@ -390,8 +390,8 @@ export default function Home({}: HomeProps) {
           <div className="flex-1 w-full h-full flex flex-col items-center">
             <br />
             {!user && (
-              <div className="flex-1 w-full h-[calc(100vh-64px)] flex flex-col items-center justify-center gap-4">
-                <span className="text-xl font-semibold">Passkeys, Relay and Social demo</span>
+              <div className="flex-1 w-full h-[calc(100vh-64px)] flex flex-col items-center justify-center gap-4 py-6">
+                <span className="text-xl font-semibold mb-8">Passkeys, Relay and Social demo</span>
                 <img
                   src="https://anichess.com/static/media/story-1.e83a88a7bfa4d1fbcad8.png"
                   alt="Anichess"

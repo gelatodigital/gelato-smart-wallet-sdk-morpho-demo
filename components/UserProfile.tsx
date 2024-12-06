@@ -23,7 +23,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
   const renderAvatar = () => {
     if (!user.image || imageError) {
       return (
-        <div className="w-16 h-16 md:w-14 md:h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-zinc-700/50">
+        <div className="min-w-[3.5rem] h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-zinc-700/50">
           <User size={24} className="text-zinc-400" />
         </div>
       );
@@ -32,7 +32,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <div className="relative w-16 h-16 md:w-14 md:h-14 cursor-pointer">
+          <div className="relative min-w-[3.5rem] h-14 cursor-pointer">
             <Image
               src={user.image}
               alt={user.name}
@@ -64,31 +64,36 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
         </div>
 
         <div className="space-y-6">
-          <div className="flex items-center gap-4 p-4 rounded-lg bg-zinc-800/50 backdrop-blur-sm transition-all duration-200 hover:bg-zinc-800/70">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg bg-zinc-800/50 backdrop-blur-sm transition-all duration-200 hover:bg-zinc-800/70">
             {renderAvatar()}
-            <div className="flex-1">
+            <div className="flex-1 w-full sm:w-auto">
               <p className="text-base font-bold text-white mb-1 tracking-wide">
                 {user.name}
               </p>
-              <div className="flex items-center gap-2 text-zinc-400">
+              <div className="flex items-center gap-2 text-zinc-400 mb-2">
                 <Mail size={14} />
                 <span className="text-sm">{user.email}</span>
               </div>
-              <a href={chainConfig.blockExplorerUrl + 'address/' + address} target={"_blank"} className="flex items-center gap-2 text-zinc-400 transition-all hover:text-white/80">
-                <Wallet size={14} />
-                <span className="text-sm">{address}</span>
+              <a
+                href={chainConfig.blockExplorerUrl + 'address/' + address}
+                target="_blank"
+                className="flex items-center gap-2 text-zinc-400 transition-all hover:text-white/80 break-all"
+              >
+                <Wallet size={14} className="min-w-[14px]" />
+                <span className="text-sm break-all">{address}</span>
+                <ExternalLink size={14} className="min-w-[14px]" />
               </a>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <h3 className="text-sm font-medium text-zinc-400">
                 Passkeys {user.passkeys.length > 0 && `(${user.passkeys.length})`}
               </h3>
               <button
                 onClick={onRegisterPasskey}
-                className="text-white font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB]"
+                className="w-full sm:w-auto text-white font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB]"
               >
                 Register a passkey
               </button>
@@ -103,7 +108,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
                     <div className="p-2 rounded-md bg-zinc-700/50 group-hover:bg-zinc-700 transition-colors duration-200">
                       <Key size={14} className="text-zinc-300" />
                     </div>
-                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors duration-200">
+                    <span className="text-sm text-zinc-300 group-hover:text-white transition-colors duration-200 break-all">
                       {key}
                     </span>
                   </div>

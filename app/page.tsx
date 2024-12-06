@@ -284,7 +284,8 @@ export default function Home({}: HomeProps) {
       });
       console.log("res", res);
       if (res) addLog("Passkey saved successfully");
-      getUserInfo(web3authSFAuth, pkPlugin);
+      let user = await getUserInfo(web3authSFAuth, pkPlugin)
+      setUser(user as any);
     } catch (error: unknown) {
       addLog((error as Error).message);
     }
@@ -335,8 +336,8 @@ export default function Home({}: HomeProps) {
           privateKeyProvider: ethereumPrivateKeyProvider,
         });
         const plugin = new PasskeysPlugin({
-          rpID:"anichess-social-relay-demo.gelato.network",
-          rpName,
+          rpID:"localhost",
+          rpName: "localhost",
           buildEnv: "staging",// "production",
         });
         web3authSfa?.addPlugin(plugin);
@@ -364,8 +365,6 @@ export default function Home({}: HomeProps) {
         });
         await web3authSfa.init();
         setWeb3authSFAuth(web3authSfa);
-
-        // (window as any).web3auth = web3authSfa;
       } catch (error) {
         console.error(error);
       }

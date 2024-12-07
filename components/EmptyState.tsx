@@ -20,7 +20,7 @@ export const EmptyState = () => {
           <div className="space-y-2">
             <h2 className="text-2xl font-bold tracking-tight">Welcome to Anichess Demo</h2>
             <p className="text-gray-400">
-              Experience seamless authentication using passkeys and social logins, powered by Account Abstraction
+              Experience seamless authentication using passkeys and social logins, powered by Gelato AA
             </p>
           </div>
         </div>
@@ -32,7 +32,7 @@ export const EmptyState = () => {
             </li>
             <li className="flex items-start gap-3">
               <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
-              <span className="text-gray-300">Get a smart contract walletd</span>
+              <span className="text-gray-300">Get a smart contract wallet</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>

@@ -39,26 +39,18 @@ export default function Header({
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="text-white font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB]">
-              Login with Passkeys
+              Login
             </Button>
           </DialogTrigger>
           <DialogContent className="bg-[#0A0A0A] max-w-md border border-[#1E293B] p-0 rounded-2xl">
             <div className="p-6 pb-0">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-[#00AEFA] to-[#00CECB] bg-clip-text text-transparent">
-                Login with Passkeys
+              <h2
+                className="text-2xl font-bold bg-gradient-to-r from-[#00AEFA] to-[#00CECB] bg-clip-text text-transparent">
+                Login
               </h2>
             </div>
 
             <div className="p-6 space-y-6">
-              <div className="bg-[#1E293B]/50 backdrop-blur-sm rounded-xl p-4 flex items-start space-x-3 border border-[#1E293B]">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00AEFA] mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  Before using Login with Passkey, you'll need to sign in with Google and set up your passkeys.
-                </p>
-              </div>
-
               <div className="flex justify-center w-full max-w-sm">
                 <div className="w-[220px] flex items-center justify-center rounded overflow-hidden">
                   <GoogleLogin
@@ -88,14 +80,28 @@ export default function Header({
                   onClick={onPasskeyLogin}
                   className="text-white font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB] w-[210px]"
                 >
-                  Login with passkey
+                  Login with Passkey
                 </button>
+              </div>
+
+
+              <div
+                className="bg-[#1E293B]/50 backdrop-blur-sm rounded-xl p-4 flex items-start space-x-3 border border-[#1E293B]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#00AEFA] mt-0.5 flex-shrink-0"
+                     fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  Before using Login with Passkey, you'll need to sign in with Google and set up your passkeys.
+                </p>
               </div>
             </div>
 
             <div className="border-t border-[#1E293B] p-4 flex items-center justify-center">
               <p className="text-xs text-center text-gray-400 flex items-center gap-x-1.5 margin-0">
-                Powered by <img src={"https://www.gelato.network/images/v2/gelato-text.svg"} alt={"gelato logo"} width={50}/>
+                Powered by <img src={"https://www.gelato.network/images/v2/gelato-text.svg"} alt={"gelato logo"}
+                                width={50}/>
               </p>
             </div>
           </DialogContent>

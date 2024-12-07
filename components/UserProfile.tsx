@@ -25,8 +25,8 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
   const renderAvatar = () => {
     if (!user.image || imageError) {
       return (
-        <div className="min-w-[3.5rem] h-14 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-zinc-700/50">
-          <User size={24} className="text-zinc-400" />
+        <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-zinc-700/50">
+          <User className="w-8 h-8 text-zinc-400" />
         </div>
       );
     }
@@ -34,17 +34,17 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
     return (
       <Dialog>
         <DialogTrigger asChild>
-          <div className="relative min-w-[3.5rem] h-14 cursor-pointer">
+          <div className="relative w-16 h-16 lg:w-20 lg:h-20 cursor-pointer">
             <Image
               src={user.image}
               alt={user.name}
               fill
-              className="rounded-lg object-cover ring-2 ring-zinc-700/50 shadow-lg transition-transform duration-200 hover:scale-105"
+              className="rounded-full object-cover ring-2 ring-zinc-700/50 shadow-lg transition-transform duration-200 hover:scale-105"
               onError={() => setImageError(true)}
             />
           </div>
         </DialogTrigger>
-        <DialogContent className="bg-[#0A0A0A] border border-[#1E293B] p-4 rounded-2xl w-[300px]">
+        <DialogContent className="bg-[#0A0A0A] border border-[#1E293B] p-4 rounded-2xl w-[90vw] max-w-[500px]">
           <div className="relative w-full aspect-square">
             <Image
               src={user.image}
@@ -66,28 +66,38 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
         </div>
 
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-lg bg-zinc-800/50 backdrop-blur-sm transition-all duration-200 hover:bg-zinc-800/70">
+          <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-lg bg-zinc-800/50">
             {renderAvatar()}
-            <div className="flex-1 w-full sm:w-auto">
-              <p className="text-base font-bold text-white mb-1 tracking-wide">
-                {user.name}
-              </p>
-              <div className="flex items-center gap-2 text-zinc-400 mb-2">
-                <Mail size={14}/>
-                <span className="text-sm">{user.email}</span>
-              </div>
-              <a
-                href={chainConfig.blockExplorerUrl + 'address/' + address}
-                target="_blank"
-                className="flex items-center gap-2 text-zinc-400 transition-all hover:text-white/80 break-all"
-              >
-                <Wallet size={14} className="min-w-[14px]"/>
-                <span className="text-sm break-all">{address ? shortenAddress(address as string) : ""}</span>
-                <ExternalLink size={14} className="min-w-[14px]"/>
-              </a>
-              <div className="flex items-center gap-2 text-zinc-400 mb-2">
-                <CloudUpload size={14}/>
-                <span className="text-sm">Deployed: {isDeployed ? "Yes" : "No"}</span>
+
+            <div className="flex-1 space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold text-white">{user.name}</h3>
+                <div className="flex flex-col gap-2 text-zinc-400">
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm truncate">{user.email}</span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <CloudUpload className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm">
+                      {isDeployed ? "Deployed" : "Not Deployed"}
+                    </span>
+                  </div>
+
+                  <a
+                    href={chainConfig.blockExplorerUrl + 'address/' + address}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
+                  >
+                    <Wallet className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium">
+                      {address ? shortenAddress(address) : ""}
+                    </span>
+                    <ExternalLink className="w-4 h-4 flex-shrink-0 opacity-50 group-hover:opacity-100" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>

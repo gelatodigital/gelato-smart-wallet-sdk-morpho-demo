@@ -55,6 +55,7 @@ export default function Home({}: HomeProps) {
   const [rpID, setRpID] = useState<string>("");
   const [rpName, setRpName] = useState<string>("");
   const [open, setOpen] = useState<boolean>(false);
+  const [loadingTokens, setLoadingTokens] = useState<boolean>(false);
 
   const addLog = useCallback((message: string | JSX.Element) => {
     setLogs((prevLogs) => [...prevLogs, message]);
@@ -282,21 +283,29 @@ export default function Home({}: HomeProps) {
   };
 
   const dropToken = async(signer:any, account:any, kernel: KernelAccountClient, setStatus:any) => {
-    const tokenContract: any = new Contract(tokenDetails.address as any, tokenDetails.abi as any, signer)
-    const {data} = await tokenContract.drop.populateTransaction()
-    const userOpHash = await kernel.sendUserOperation({
-      callData: await account.encodeCalls([
-        {
-          to: tokenDetails.address,
-          value: BigInt(0),
-          data:  data,
-        },
-      ]),
-      // Gelato-specific configurations
-      maxFeePerGas: BigInt(0),
-      maxPriorityFeePerGas: BigInt(0),
-    });
-    addLog(`Tokens claimed successfully! Transaction: ${userOpHash}`);
+    setLoadingTokens(true);
+    try {
+      const tokenContract: any = new Contract(tokenDetails.address as any, tokenDetails.abi as any, signer)
+      const {data} = await tokenContract.drop.populateTransaction()
+      const userOpHash = await kernel.sendUserOperation({
+        callData: await account.encodeCalls([
+          {
+            to: tokenDetails.address,
+            value: BigInt(0),
+            data:  data,
+          },
+        ]),
+        // Gelato-specific configurations
+        maxFeePerGas: BigInt(0),
+        maxPriorityFeePerGas: BigInt(0),
+      });
+      addLog(`Tokens claimed successfully! Transaction: ${userOpHash}`);
+      addLog("Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)");
+    } catch (error: any) {
+      addLog(`Error claiming tokens: ${typeof error === "string" ? error : error?.message || 'Unknown error occurred'}`);
+    } finally {
+      setLoadingTokens(false);
+    }
   }
 
   useEffect(() => {
@@ -386,7 +395,7 @@ export default function Home({}: HomeProps) {
                 <>
                   <br/>
                   <UserProfile address={smartAccount?.address} user={user} onRegisterPasskey={registerPasskey}/>
-                  <WalletCard address={smartAccount?.address} onClaimTokens={() => {
+                  <WalletCard isLoading={loadingTokens} address={smartAccount?.address} onClaimTokens={() => {
                     addLog("Claiming tokens...");
                     dropToken(signer, smartAccount, kernel as any, () => {
                     })

@@ -1,13 +1,12 @@
 import React from 'react';
 import { Address } from "viem";
 import { ExternalLink } from 'lucide-react';
-import { Ignis, Tyde } from "@/app/blockchain/contracts";
 import { chainConfig } from "@/app/blockchain/config";
 import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
 import { formatUnits } from 'viem';
 
-const WalletCard = ({ address, onClaimTokens }: { address?: string, onClaimTokens: () => void }) => {
-  const { data: tokensData, isLoading } = useTokenHoldings(address as Address);
+const WalletCard = ({ address, onClaimTokens, isLoading }: { address?: string, isLoading?: boolean, onClaimTokens: () => void }) => {
+  const { data: tokensData } = useTokenHoldings(address as Address);
 
   const getExplorerLink = (tokenAddress: string) => {
     return `${chainConfig.blockExplorerUrl}token/${tokenAddress}`;

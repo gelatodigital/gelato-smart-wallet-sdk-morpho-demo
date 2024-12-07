@@ -326,8 +326,8 @@ export default function Home({}: HomeProps) {
           privateKeyProvider: ethereumPrivateKeyProvider,
         });
         const plugin = new PasskeysPlugin({
-          rpID:"localhost",
-          rpName: "localhost",
+          rpID:"anichess-social-relay-demo.gelato.network",
+          rpName,
           buildEnv: "staging",// "production",
         });
         web3authSfa?.addPlugin(plugin);

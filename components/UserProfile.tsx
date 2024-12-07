@@ -81,7 +81,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
                 className="flex items-center gap-2 text-zinc-400 transition-all hover:text-white/80 break-all"
               >
                 <Wallet size={14} className="min-w-[14px]" />
-                <span className="text-sm break-all">{shortenAddress(address)}</span>
+                <span className="text-sm break-all">{address ? shortenAddress(address as string) : ""}</span>
                 <ExternalLink size={14} className="min-w-[14px]" />
               </a>
             </div>

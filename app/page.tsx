@@ -394,7 +394,7 @@ export default function Home({}: HomeProps) {
               !!user && (
                 <>
                   <br/>
-                  <UserProfile address={smartAccount?.address} user={user} onRegisterPasskey={registerPasskey}/>
+                  <UserProfile address={smartAccount?.address} user={user} isDeployed={isDeployed} onRegisterPasskey={registerPasskey}/>
                   <WalletCard isLoading={loadingTokens} address={smartAccount?.address} onClaimTokens={() => {
                     addLog("Claiming tokens...");
                     dropToken(signer, smartAccount, kernel as any, () => {

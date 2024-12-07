@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {Key, Mail, User, ExternalLink, Wallet} from 'lucide-react';
+import {Key, Mail, User, ExternalLink, Wallet, CloudUpload} from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import Image from 'next/image';
 import {chainConfig} from "@/app/blockchain/config";
@@ -15,10 +15,11 @@ interface UserData {
 interface UserProfileProps {
   user: UserData;
   address?: string;
+  isDeployed?: boolean;
   onRegisterPasskey?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPasskey }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, onRegisterPasskey }) => {
   const [imageError, setImageError] = useState(false);
 
   const renderAvatar = () => {
@@ -72,7 +73,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
                 {user.name}
               </p>
               <div className="flex items-center gap-2 text-zinc-400 mb-2">
-                <Mail size={14} />
+                <Mail size={14}/>
                 <span className="text-sm">{user.email}</span>
               </div>
               <a
@@ -80,10 +81,14 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
                 target="_blank"
                 className="flex items-center gap-2 text-zinc-400 transition-all hover:text-white/80 break-all"
               >
-                <Wallet size={14} className="min-w-[14px]" />
+                <Wallet size={14} className="min-w-[14px]"/>
                 <span className="text-sm break-all">{address ? shortenAddress(address as string) : ""}</span>
-                <ExternalLink size={14} className="min-w-[14px]" />
+                <ExternalLink size={14} className="min-w-[14px]"/>
               </a>
+              <div className="flex items-center gap-2 text-zinc-400 mb-2">
+                <CloudUpload size={14}/>
+                <span className="text-sm">Deployed: {isDeployed ? "Yes" : "No"}</span>
+              </div>
             </div>
           </div>
 

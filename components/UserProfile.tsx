@@ -3,6 +3,7 @@ import {Key, Mail, User, ExternalLink, Wallet} from 'lucide-react';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import Image from 'next/image';
 import {chainConfig} from "@/app/blockchain/config";
+import {shortenAddress} from "@/app/blockchain/utils";
 
 interface UserData {
   name: string;
@@ -80,7 +81,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, onRegisterPass
                 className="flex items-center gap-2 text-zinc-400 transition-all hover:text-white/80 break-all"
               >
                 <Wallet size={14} className="min-w-[14px]" />
-                <span className="text-sm break-all">{address}</span>
+                <span className="text-sm break-all">{shortenAddress(address)}</span>
                 <ExternalLink size={14} className="min-w-[14px]" />
               </a>
             </div>

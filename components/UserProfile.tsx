@@ -86,7 +86,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
                   </div>
 
                   <a
-                    href={chainConfig.blockExplorerUrl + 'address/' + address}
+                    href={chainConfig.blockExplorers.default.url+ 'address/' + address}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"

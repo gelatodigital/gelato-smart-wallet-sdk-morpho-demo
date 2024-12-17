@@ -34,18 +34,11 @@ import { EmptyState } from "@/components/EmptyState";
 
 interface HomeProps {}
 
-const tokenDetails = {
-  address: "0x28266Ac8A75BCC261d8Ed655d1d3E63173340978",
-  abi: [
-    "function drop() external",
-    "function stake() external",
-    "function balanceOf(address) external view returns(uint256)",
-    "function dropped(address) external view returns(uint256)",
-  ],
-};
+
 
 import { projectId } from "./constants";
 import { sepolia } from "viem/chains";
+import { tokenDetails } from "./blockchain/config";
 
 const BUNDLER_URL = `https://rpc.zerodev.app/api/v2/bundler/${projectId}`//?provider=GELATO`;
 const PAYMASTER_URL = `https://rpc.zerodev.app/api/v2/paymaster/${projectId}`;
@@ -124,6 +117,8 @@ export default function Home({}: HomeProps) {
       entryPoint,
       kernelVersion,
     });
+
+
     kernelClient = createKernelAccountClient({
       account: kernelAccount,
       chain: CHAIN,
@@ -143,6 +138,8 @@ export default function Home({}: HomeProps) {
         },
       },
     });
+
+   //let isDeployed = await kernelAccount.isDeployed()
 
     setIsKernelClientReady(true);
     setAccountAddress(kernelAccount.address);
@@ -206,17 +203,20 @@ export default function Home({}: HomeProps) {
   ) => {
     setLoadingTokens(true);
     try {
-    
+ 
+      let data = encodeFunctionData({
+        abi: tokenDetails.abi,
+        functionName: "drop",
+        args: [],
+      })
+ 
+   
       const userOpHash = await kernelClient.sendUserOperation({
         userOperation: {
           callData: await kernelAccount.encodeCallData({
             to: tokenDetails.address,
             value: BigInt(0),
-            data: encodeFunctionData({
-              abi: tokenDetails.abi,
-              functionName: "drop",
-              args: [],
-            }),
+            data,
           }),
         },
       });
@@ -229,11 +229,13 @@ export default function Home({}: HomeProps) {
       await bundlerClient.waitForUserOperationReceipt({
         hash: userOpHash,
       });
+ 
       addLog(`Tokens claimed successfully! Transaction: ${userOpHash}`);
       addLog(
         "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
       );
     } catch (error: any) {
+      console.log(error)
       addLog(
         `Error claiming tokens: ${
           typeof error === "string"
@@ -247,7 +249,7 @@ export default function Home({}: HomeProps) {
   };
 
 
-  const stakenToken = async (
+  const stakeToken = async (
   ) => {
     setLoadingTokens(true);
     try {
@@ -304,7 +306,7 @@ export default function Home({}: HomeProps) {
           <Header
             isLoggedIn={!!user}
             addLog={addLog}
-            walletAddress={smartAccount?.address}
+            walletAddress={accountAddress}
             handleLogout={logout}
             onPasskeyLogin={handleLogin}
             onPasskeyRegister={handleRegister}
@@ -317,17 +319,19 @@ export default function Home({}: HomeProps) {
               <>
                 <br />
                 <UserProfile
-                  address={smartAccount?.address}
-                  user={user}
+                  address={accountAddress}
                   isDeployed={isDeployed}
-                  onRegisterPasskey={handleRegister}
                 />
                 <WalletCard
                   isLoading={loadingTokens}
-                  address={smartAccount?.address}
+                  address={accountAddress}
                   onClaimTokens={() => {
                     addLog("Claiming tokens...");
                     dropToken();
+                  }}
+                  onStakeTokens={() => {
+                    addLog("Staken tokens...");
+                    stakeToken();
                   }}
                 />
               </>

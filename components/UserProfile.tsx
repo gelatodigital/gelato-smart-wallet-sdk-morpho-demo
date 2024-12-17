@@ -1,62 +1,18 @@
 import React, { useState } from 'react';
 import {Key, Mail, User, ExternalLink, Wallet, CloudUpload} from 'lucide-react';
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import Image from 'next/image';
 import {chainConfig} from "@/app/blockchain/config";
 import {shortenAddress} from "@/app/blockchain/utils";
 
-interface UserData {
-  name: string;
-  email: string;
-  image?: string;
-  passkeys: string[];
-}
 
 interface UserProfileProps {
-  user: UserData;
   address?: string;
   isDeployed?: boolean;
-  onRegisterPasskey?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, onRegisterPasskey }) => {
+const UserProfile: React.FC<UserProfileProps> = ({ address, isDeployed}) => {
   const [imageError, setImageError] = useState(false);
 
-  const renderAvatar = () => {
-    if (!user.image || imageError) {
-      return (
-        <div className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center ring-2 ring-zinc-700/50">
-          <User className="w-8 h-8 text-zinc-400" />
-        </div>
-      );
-    }
-
-    return (
-      <Dialog>
-        <DialogTrigger asChild>
-          <div className="relative w-16 h-16 lg:w-20 lg:h-20 cursor-pointer">
-            <Image
-              src={user.image}
-              alt={user.name}
-              fill
-              className="rounded-full object-cover ring-2 ring-zinc-700/50 shadow-lg transition-transform duration-200 hover:scale-105"
-              onError={() => setImageError(true)}
-            />
-          </div>
-        </DialogTrigger>
-        <DialogContent className="bg-[#0A0A0A] border border-[#1E293B] p-4 rounded-2xl w-[90vw] max-w-[500px]">
-          <div className="relative w-full aspect-square">
-            <Image
-              src={user.image}
-              alt={user.name}
-              fill
-              className="object-contain rounded-lg"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
-    );
-  };
 
   return (
     <div className="pb-4 md:pb-0 w-full h-auto px-4 sm:px-0 flex items-center justify-center">
@@ -67,17 +23,11 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
 
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row gap-6 p-6 rounded-lg bg-zinc-800/50">
-            {renderAvatar()}
-
+  
             <div className="flex-1 space-y-4">
               <div className="space-y-1">
-                <h3 className="text-lg font-semibold text-white">{user.name}</h3>
                 <div className="flex flex-col gap-2 text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 flex-shrink-0" />
-                    <span className="text-sm truncate">{user.email}</span>
-                  </div>
-
+               
                   <div className="flex items-center gap-2">
                     <CloudUpload className="w-4 h-4 flex-shrink-0" />
                     <span className="text-sm">
@@ -86,7 +36,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
                   </div>
 
                   <a
-                    href={chainConfig.blockExplorers.default.url+ 'address/' + address}
+                    href={chainConfig.blockExplorers.default.url+ '/address/' + address}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group"
@@ -102,7 +52,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
             </div>
           </div>
 
-          <div className="space-y-3">
+          {/* <div className="space-y-3">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
               <h3 className="text-sm font-medium text-zinc-400">
                 Passkeys {user.passkeys.length > 0 && `(${user.passkeys.length})`}
@@ -136,7 +86,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ user, address, isDeployed, on
                 <p className="text-sm text-zinc-600">No passkeys registered</p>
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

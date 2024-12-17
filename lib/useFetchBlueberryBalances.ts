@@ -1,29 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
+import { chainConfig, tokenDetails } from "@/app/blockchain/config";
+import { Contract, JsonRpcProvider } from 'ethers';
 
-interface TokenData {
-  address: string;
-  circulating_market_cap: number | null;
-  decimals: string;
-  exchange_rate: number | null;
-  holders: string;
-  icon_url: string | null;
-  name: string;
-  symbol: string;
-  total_supply: string;
-  type: 'ERC-20' | 'ERC-721' | 'ERC-1155';
-  volume_24h: number | null;
-}
-
-interface TokenHolding {
-  token: TokenData;
-  token_id: string | null;
-  token_instance: any | null;
-  value: string;
-}
 
 interface TokenHoldingsResponse {
-  items: TokenHolding[];
-  next_page_params: any | null;
+ tokens:number
+ stakedTimeString:string
 }
 
 export const useTokenHoldings = (address: string | undefined) => {
@@ -32,15 +14,16 @@ export const useTokenHoldings = (address: string | undefined) => {
     queryFn: async (): Promise<TokenHoldingsResponse> => {
       if (!address) throw new Error('Address is required');
 
-      const response = await fetch(
-        `https://arb-blueberry.gelatoscout.com/api/v2/addresses/${address}/tokens?type=ERC-20%2CERC-721%2CERC-1155`
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch token holdings');
+      const provider = new JsonRpcProvider(chainConfig.rpcUrls.default.http[0])
+      const droppStakeContract = new Contract(tokenDetails.address, tokenDetails.abi,provider)
+      const tokens = +(await droppStakeContract.balanceOf(address)).toString();
+      const stakedTimestamp = +(await droppStakeContract.staked(address)).toString() * 1000
+      const stakedTimeString =  stakedTimestamp == 0 ? "Not Staked" : new Date(stakedTimestamp).toLocaleTimeString()
+  
+      return { 
+        tokens,
+        stakedTimeString
       }
-
-      return response.json();
     },
     enabled: !!address,
     refetchInterval: 2000,

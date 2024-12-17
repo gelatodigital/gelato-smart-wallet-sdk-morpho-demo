@@ -1,8 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger,DialogTitle } from "@/components/ui/dialog";
 import { shortenAddress } from "@/app/blockchain/utils";
-import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 import { chainConfig } from "@/app/blockchain/config";
 
 interface HeaderProps {
@@ -40,6 +39,7 @@ export default function Header({
 
       {!isLoggedIn && (
         <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTitle></DialogTitle>
           <DialogTrigger asChild>
             <Button className="text-white font-bold duration-200 font-semibold px-6 py-2 rounded-full bg-gradient-to-r from-[#00AEFA] to-[#00AEFA] hover:from-[#1093CD] hover:to-[#00CECB]">
               Login
@@ -118,7 +118,7 @@ export default function Header({
           {walletAddress && (
             <a
               target="_blank"
-              href={`${chainConfig.blockExplorerUrl}address/${walletAddress}`}
+              href={`${chainConfig.blockExplorers.default.url}/address/${walletAddress}`}
               className="text-white hover:text-[#00AFFA]/80 transition-colors duration-200"
             >
               {shortenAddress(walletAddress)}

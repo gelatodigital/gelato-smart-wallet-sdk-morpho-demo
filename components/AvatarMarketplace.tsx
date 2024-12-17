@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { VisuallyHidden } from 'react-aria';
 import {
   Dialog,
   DialogContent,
@@ -301,12 +302,14 @@ export default function AvatarMarketplace({
         ))}
       </div>
 
-      <Dialog open={showSuccessModal} onOpenChange={closeSuccessModal}>
+      {/* <Dialog open={showSuccessModal} onOpenChange={closeSuccessModal}>
         <DialogContent className="bg-black border-2 border-[#00AEFA] z-[99999]">
           <DialogHeader>
+          <VisuallyHidden>
             <DialogTitle className="text-[#00AEFA]">
               Congratulations!
             </DialogTitle>
+            </VisuallyHidden>
             <DialogDescription className="text-white">
               You have successfully minted{" "}
               {mintedListing?.type === "single"
@@ -356,7 +359,7 @@ export default function AvatarMarketplace({
             )}
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
 
       {showSuccessModal && (
         <div className="fixed inset-0 z-[60] pointer-events-none">

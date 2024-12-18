@@ -29,7 +29,7 @@ import { KERNEL_V3_1} from "@zerodev/sdk/constants";
 import { createPublicClient, defineChain } from "viem";
 import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
-import { Contract } from "ethers";
+import { Contract, JsonRpcProvider } from "ethers";
 import { EmptyState } from "@/components/EmptyState";
 
 interface HomeProps {}
@@ -142,9 +142,23 @@ export default function Home({}: HomeProps) {
    //let isDeployed = await kernelAccount.isDeployed()
 
     setIsKernelClientReady(true);
+    checkIsDeployed(kernelAccount.address)
     setAccountAddress(kernelAccount.address);
     setUser(kernelAccount.address);
   };
+
+
+  const checkIsDeployed = async (address:string) => {
+
+    let provider = new JsonRpcProvider(CHAIN.rpcUrls.default.http[0])
+    let code = await provider.getCode(address)
+    if (code == "0x") {
+      setIsDeployed(false)
+    } else {
+      setIsDeployed(true)
+    }
+
+  }
 
   // Function to be called when "Register" is clicked
   const handleRegister = async () => {
@@ -229,7 +243,7 @@ export default function Home({}: HomeProps) {
       await bundlerClient.waitForUserOperationReceipt({
         hash: userOpHash,
       });
- 
+      checkIsDeployed(accountAddress)
       addLog(`Tokens claimed successfully! Transaction: ${userOpHash}`);
       addLog(
         "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
@@ -276,6 +290,7 @@ export default function Home({}: HomeProps) {
       await bundlerClient.waitForUserOperationReceipt({
         hash: userOpHash,
       });
+      checkIsDeployed(accountAddress)
       addLog(`Tokens staked successfully! Transaction: ${userOpHash}`);
       addLog(
         "Now you are able to sponsor all your transactions"

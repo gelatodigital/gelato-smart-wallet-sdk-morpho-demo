@@ -18,8 +18,6 @@ const WalletCard = ({
 }) => {
   const resultTokens = useTokenHoldings(address as Address);
 
-  console.log(resultTokens)
-
   const getExplorerLink = (tokenAddress: string) => {
     return `${chainConfig.blockExplorers.default.url}/token/${tokenAddress}`;
   };
@@ -53,7 +51,8 @@ const WalletCard = ({
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
-            <h3 className="text-sm font-medium text-zinc-400">Assets</h3>
+            <h3 className="text-sm font-medium text-zinc-400">Every hour you can have 2 txs sponsored</h3> 
+            <h3 className="text-sm font-medium text-zinc-400">If you stake, after 5 min you will be able to enjoy free txs</h3> 
             <div className="space-y-3">
               {isLoading ? (
                 <div className="h-48 flex items-center justify-center text-zinc-400 text-sm">
@@ -61,13 +60,13 @@ const WalletCard = ({
                 </div>
               ) : (
                <div>
-                <a
+                {/* <a
                   href={getExplorerLink(tokenDetails.address)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-md bg-zinc-800/50 hover:bg-zinc-800 transition-colors cursor-pointer group gap-4 sm:gap-2"
                 > 
-                    </a>
+                    </a> */}
                   <div className="h-48 flex items-center justify-center text-zinc-400 text flex-col gap-y-2">
                     <div className="flex flex-col sm:items-end gap-1">
                       <div className="flex items-center gap-2 text-zinc-400 text-sm">
@@ -93,7 +92,15 @@ const WalletCard = ({
                         <span>Staked Time:</span>
                         <span className="text-white font-medium">
                           {
-                            resultTokens.data?.stakedTimeString
+                            resultTokens.data?.stakedTimeString 
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                        <span>Endless sponsor:</span>
+                        <span className="text-white font-medium">
+                          {
+                            resultTokens.data?.stakedTimeString == "Not Staked" ? "No" :  resultTokens.data?.sec! > 300 ? "YES" :  300 - resultTokens.data?.sec! + " sec to go" 
                           }
                         </span>
                       </div>

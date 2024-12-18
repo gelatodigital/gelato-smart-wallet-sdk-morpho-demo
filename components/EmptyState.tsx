@@ -28,15 +28,15 @@ export const EmptyState = () => {
           <ul className="space-y-4 text-left">
             <li className="flex items-start gap-3">
               <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">1</span>
-              <span className="text-gray-300">Sign in with passkeys or social accounts</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
               <span className="text-gray-300">Get a smart contract wallet</span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
+              <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">2</span>
               <span className="text-gray-300">Claim tokens</span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="font-mono bg-gray-800 rounded-full w-6 h-6 flex items-center justify-center text-sm">3</span>
+              <span className="text-gray-300">Stake tokens</span>
             </li>
           </ul>
         </div>

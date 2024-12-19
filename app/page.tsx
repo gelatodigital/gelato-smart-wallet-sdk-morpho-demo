@@ -296,7 +296,7 @@ export default function Home({}: HomeProps) {
       checkIsDeployed(accountAddress)
       addLog(`Tokens staked successfully! Transaction: ${userOpHash}`);
       addLog(
-        "Now you are able to sponsor all your transactions"
+        "Now you will be able to sponsor all your transactions after 5 min"
       );
     } catch (error: any) {
       toast.error(`Error staking token. Check the logs`)

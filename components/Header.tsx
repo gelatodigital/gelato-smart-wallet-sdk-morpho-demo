@@ -77,7 +77,7 @@ export default function Header({
                 </button>
               </div>
 
-              <div className="bg-[#1E293B]/50 backdrop-blur-sm rounded-xl p-4 flex items-start space-x-3 border border-[#1E293B]">
+              <div className="hidden bg-[#1E293B]/50 backdrop-blur-sm rounded-xl p-4 flex items-start space-x-3 border border-[#1E293B]">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5 text-[#00AEFA] mt-0.5 flex-shrink-0"

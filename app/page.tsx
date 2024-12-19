@@ -40,6 +40,8 @@ import { projectId } from "./constants";
 import { sepolia } from "viem/chains";
 import { tokenDetails } from "./blockchain/config";
 
+import { Toaster, toast } from 'sonner'
+
 const BUNDLER_URL = `https://rpc.zerodev.app/api/v2/bundler/${projectId}`//?provider=GELATO`;
 const PAYMASTER_URL = `https://rpc.zerodev.app/api/v2/paymaster/${projectId}`;
 const PASSKEY_SERVER_URL = `https://passkeys.zerodev.app/api/v3/${projectId}`;
@@ -180,7 +182,7 @@ export default function Home({}: HomeProps) {
 
     await createAccountAndClient(passkeyValidator);
     setIsRegistering(false);
-    window.alert("Register done.  Try sending UserOps.");
+    toast.success("Register done.  Try sending UserOps.", { position: "top-center" });
   };
 
   const handleLogin = async () => {
@@ -203,7 +205,7 @@ export default function Home({}: HomeProps) {
     await createAccountAndClient(passkeyValidator);
 
     setIsLoggingIn(false);
-    window.alert("Login done.  Try sending UserOps.");
+    toast.success("Login done. Try sending UserOps.");
   };
 
 
@@ -250,6 +252,7 @@ export default function Home({}: HomeProps) {
       );
     } catch (error: any) {
       console.log(error)
+      toast.error(`Error claiming token. Check the logs`)
       addLog(
         `Error claiming tokens: ${
           typeof error === "string"
@@ -296,6 +299,7 @@ export default function Home({}: HomeProps) {
         "Now you are able to sponsor all your transactions"
       );
     } catch (error: any) {
+      toast.error(`Error staking token. Check the logs`)
       addLog(
         `Error staking tokens: ${
           typeof error === "string"
@@ -328,7 +332,7 @@ export default function Home({}: HomeProps) {
             open={open}
             setOpen={setOpen}
           />
-          <div className="flex-1 w-full h-full flex flex-col items-center">
+          <div className="flex-1 w-full h-full flex flex-col items-center py-4">
             {!user && <EmptyState />}
             {!!user && (
               <>
@@ -341,11 +345,11 @@ export default function Home({}: HomeProps) {
                   isLoading={loadingTokens}
                   address={accountAddress}
                   onClaimTokens={() => {
-                    addLog("Claiming tokens...");
+                    addLog('Claiming tokens...');
                     dropToken();
                   }}
                   onStakeTokens={() => {
-                    addLog("Staken tokens...");
+                    addLog('Staken tokens...');
                     stakeToken();
                   }}
                 />
@@ -359,6 +363,7 @@ export default function Home({}: HomeProps) {
           />
         </div>
       </div>
+      <Toaster richColors />
     </ThemeProvider>
   );
 }

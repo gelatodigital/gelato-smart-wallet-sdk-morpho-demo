@@ -1,8 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { defineChain } from "viem";
 import { http, createConfig } from "wagmi";
-import { ethers } from "ethers";
-import { sepolia } from "viem/chains";
 
 export const queryClient = new QueryClient();
 export const chess = defineChain({

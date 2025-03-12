@@ -5,54 +5,32 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/Header";
 import TerminalLog from "@/components/TerminalLog";
 import WalletCard from "@/components/WalletCard";
-import { createAccount } from "@turnkey/viem";
 import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import {
   createKernelAccount,
   createKernelAccountClient,
   getUserOperationGasPrice,
 } from "@zerodev/sdk";
-import {
-  getEntryPoint,
-  KERNEL_V2_4,
-  KERNEL_V3_1,
-} from "@zerodev/sdk/constants";
-import { createPublicClient, encodeFunctionData } from "viem";
+import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
+import { encodeFunctionData } from "viem";
 import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
 import { Contract, JsonRpcProvider } from "ethers";
 import { EmptyState } from "@/components/EmptyState";
-import { mikeTestnet, chainConfig, tokenDetails } from "./blockchain/config";
+import { chainConfig, tokenDetails } from "./blockchain/config";
 import { Toaster, toast } from "sonner";
-import {
-  DEFAULT_ETHEREUM_ACCOUNTS,
-  TurnkeyApiTypes,
-  Turnkey,
-} from "@turnkey/sdk-server";
-import { refineNonNull } from "./utils";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 interface HomeProps {}
 
-let CHAIN = mikeTestnet;
-const CHAIN_ID = mikeTestnet.id;
+let CHAIN = chainConfig;
+const CHAIN_ID = chainConfig.id;
 
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
 
-interface TWalletDetails {
-  id: string;
-  address: string;
-  subOrgId: string;
-}
-type TAttestation = TurnkeyApiTypes["v1Attestation"];
-
 export default function Home({}: HomeProps) {
-  const [mounted, setMounted] = useState(false);
   const [accountAddress, setAccountAddress] = useState("");
   const [isKernelClientReady, setIsKernelClientReady] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [userOpHash, setUserOpHash] = useState("");
-  const [wallet, setWallet] = useState<TWalletDetails | null>(null);
   const [kernelAccount, setKernelAccount] = useState<any>(null);
   const [kernelClient, setKernelClient] = useState<any>(null);
   const [logs, setLogs] = useState<(string | JSX.Element)[]>([]);
@@ -63,6 +41,7 @@ export default function Home({}: HomeProps) {
   const [open, setOpen] = useState<boolean>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [loadingTokens, setLoadingTokens] = useState<boolean>(false);
+  const [isInitializing, setIsInitializing] = useState<boolean>(false);
 
   const kernelVersion = KERNEL_V3_1;
   const { primaryWallet, handleLogOut } = useDynamicContext();
@@ -130,7 +109,6 @@ export default function Home({}: HomeProps) {
   const logout = async () => {
     try {
       handleLogOut();
-      setWallet(null);
       setUser(null);
       setAccountAddress("");
       setOpen(false);
@@ -261,10 +239,18 @@ export default function Home({}: HomeProps) {
   useEffect(() => {
     async function createAccount() {
       if (primaryWallet) {
-        console.log(primaryWallet);
-        const kernelClient = await createKernelClient();
-        console.log(kernelClient);
-        setUser(primaryWallet.address);
+        setIsInitializing(true);
+        try {
+          console.log(primaryWallet);
+          const kernelClient = await createKernelClient();
+          console.log(kernelClient);
+          setUser(primaryWallet.address);
+        } catch (error) {
+          console.error("Failed to create kernel client:", error);
+          toast.error("Failed to initialize wallet");
+        } finally {
+          setIsInitializing(false);
+        }
       }
     }
     createAccount();
@@ -281,8 +267,14 @@ export default function Home({}: HomeProps) {
             handleLogout={logout}
           />
           <div className="flex-1 w-full h-full flex flex-col items-center py-4">
-            {!user && <EmptyState />}
-            {!!user && (
+            {isInitializing && (
+              <div className="flex flex-col items-center justify-center mt-20">
+                <div className="w-8 h-8 border-4 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
+                <p className="mt-4 text-gray-400">Initializing wallet...</p>
+              </div>
+            )}
+            {!isInitializing && !user && <EmptyState />}
+            {!isInitializing && !!user && (
               <>
                 <br />
                 <UserProfile address={accountAddress} isDeployed={isDeployed} />

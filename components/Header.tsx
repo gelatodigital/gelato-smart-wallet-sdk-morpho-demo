@@ -59,7 +59,7 @@ export default function Header({
         />
       </div>
 
-      {!isLoggedIn && <DynamicWidget />}
+      <DynamicWidget />
 
       {isLoggedIn && (
         <div className="flex items-center gap-x-4">

@@ -23,8 +23,8 @@ export const EmptyState = () => {
               Welcome to Gelato Demo
             </h2>
             <p className="text-gray-400">
-              Experience seamless authentication using turnkey passkeys powered
-              by Gelato AA
+              Experience seamless authentication with Dynamic's login methods,
+              powered by Gelato AA.
             </p>
           </div>
         </div>

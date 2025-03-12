@@ -4,11 +4,11 @@ import Providers from "@/app/providers";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Turnkey & EIP-7702 demo",
-  description: "Turnkey & EIP-7702 demo ",
+  title: "Dynamic & EIP-7702 demo",
+  description: "Dynamic & EIP-7702 demo ",
   openGraph: {
-    title: "Turnkey & EIP-7702 demo",
-    description: "Turnkey & EIP-7702 demo ",
+    title: "Dynamic & EIP-7702 demo",
+    description: "Dynamic & EIP-7702 demo ",
     images: [
       "https://cdn.prod.website-files.com/672e31b60a8c3f5e53aced2d/673cc864ff13c827dfd59a02_ABC-OG%20Image-min%202.png",
     ],

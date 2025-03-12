@@ -1,6 +1,6 @@
 import React from "react";
 import { Address } from "viem";
-import { Timer, Lock, Coins, ExternalLink } from 'lucide-react';
+import { Timer, Lock, Coins, ExternalLink } from "lucide-react";
 import { chainConfig } from "@/app/blockchain/config";
 import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
 import { formatUnits } from "viem";
@@ -51,8 +51,7 @@ const WalletCard = ({
         </div>
         <div className="space-y-4">
           <div className="space-y-2">
-            <div
-              className="bg-[#1E293B]/50 backdrop-blur-sm rounded-xl p-4 flex items-center space-x-3 border border-[#1E293B]">
+            <div className="bg-[#1E293B]/50 backdrop-blur-sm rounded-xl p-4 flex items-center space-x-3 border border-[#1E293B]">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 text-[#00AEFA] mt-0.5 flex-shrink-0"
@@ -69,19 +68,22 @@ const WalletCard = ({
               </svg>
               <div>
                 <p className="text-sm text-gray-300 leading-relaxed">
-                  Get 2 sponsored transactions every hour.
+                  These are sponsored transactions powered by Gelato's 1Balance
                 </p>
                 <p className="text-sm text-gray-300 leading-relaxed">
-                  If you stake, after 5 min you will be able to enjoy free
-                  txs.
+                  Begin by claiming your tokens to start staking.
                 </p>
               </div>
             </div>
+
             <div className="space-y-3 relative">
-              <div className={`w-full flex flex-col md:flex-row gap-6 mt-6 ${isLoading ? 'opacity-50' : ''}`}>
+              <div
+                className={`w-full flex flex-col md:flex-row gap-6 mt-6 ${
+                  isLoading ? "opacity-50" : ""
+                }`}
+              >
                 {/* Balance Card */}
-                <div
-                  className="w-full bg-zinc-900 rounded-2xl p-8 shadow-xl border border-zinc-800 transform transition-all duration-300 hover:scale-[1.02] hover:border-zinc-700 flex items-center justify-center">
+                <div className="w-full bg-zinc-900 rounded-2xl p-8 shadow-xl border border-zinc-800 transform transition-all duration-300 hover:scale-[1.02] hover:border-zinc-700 flex items-center justify-center">
                   <div className="flex flex-col items-center justify-center space-y-4">
                     <div className="flex items-center justify-center space-x-3 mb-2">
                       <div className="bg-blue-500/10 p-3 rounded-full">
@@ -115,28 +117,18 @@ const WalletCard = ({
                 </div>
 
                 {/* Staking Card */}
-                <div
-                  className="w-full bg-zinc-900 rounded-2xl p-8 shadow-xl border border-zinc-800 transform transition-all duration-300 hover:scale-[1.02] hover:border-zinc-700">
+                <div className="w-full bg-zinc-900 rounded-2xl p-8 shadow-xl border border-zinc-800 transform transition-all duration-300 hover:scale-[1.02] hover:border-zinc-700">
                   <div className="h-48 flex items-center justify-center text-zinc-400 text flex-col gap-y-4">
                     <div className="flex items-center justify-center space-x-3 mb-2">
                       <div className="bg-blue-500/10 p-3 rounded-full">
                         <Lock className="w-6 h-6 text-blue-400" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-zinc-400 text-sm">Staked Time:</span>
+                        <span className="text-zinc-400 text-sm">
+                          Staked Time:
+                        </span>
                         <span className="text-white text-2xl font-bold">
                           {resultTokens?.data?.stakedTimeString}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col sm:items-center gap-1">
-                      <div className="flex items-center gap-2 text-zinc-400 text-sm">
-                        <span>Endless sponsor:</span>
-                        <span className="text-white font-medium">
-                          {
-                            resultTokens.data?.stakedTimeString == "Not Staked" ? "No" :  resultTokens.data?.sec! > 300 ? "YES" :  300 - resultTokens.data?.sec! + " sec to go"
-                          }
                         </span>
                       </div>
                     </div>
@@ -159,8 +151,7 @@ const WalletCard = ({
               </div>
 
               {isLoading && (
-                <div
-                  className="absolute inset-0 flex items-center justify-center bg-zinc-900/20 backdrop-blur-sm rounded-2xl top-[-14px]">
+                <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/20 backdrop-blur-sm rounded-2xl top-[-14px]">
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
                     <span className="text-zinc-400 text-sm">Loading...</span>
@@ -168,11 +159,9 @@ const WalletCard = ({
                 </div>
               )}
             </div>
-
           </div>
         </div>
       </div>
-
     </div>
   );
 };

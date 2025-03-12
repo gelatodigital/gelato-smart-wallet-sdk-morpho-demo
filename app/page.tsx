@@ -5,254 +5,340 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/Header";
 import TerminalLog from "@/components/TerminalLog";
 import WalletCard from "@/components/WalletCard";
-
+import { useTurnkey } from "@turnkey/sdk-react";
+import { createAccount } from "@turnkey/viem";
+import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import {
   createKernelAccount,
   createKernelAccountClient,
-  createZeroDevPaymasterClient,
-  KernelAccountClient,
+  getUserOperationGasPrice,
 } from "@zerodev/sdk";
-import {
-  toPasskeyValidator,
-  toWebAuthnKey,
-  WebAuthnMode,
-  PasskeyValidatorContractVersion,
-} from "@zerodev/passkey-validator";
-import { bundlerActions, ENTRYPOINT_ADDRESS_V07 } from "permissionless";
-import { parseAbi, encodeFunctionData, zeroAddress } from "viem";
-
-import {
-  entryPoint06Address,
-  EntryPointVersion,
-} from "viem/account-abstraction";
-import { KERNEL_V3_1} from "@zerodev/sdk/constants";
-import { createPublicClient, defineChain } from "viem";
+import { getEntryPoint, KERNEL_V2_4 } from "@zerodev/sdk/constants";
+import { createPublicClient, encodeFunctionData } from "viem";
 import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
 import { Contract, JsonRpcProvider } from "ethers";
 import { EmptyState } from "@/components/EmptyState";
+import {
+  arbitrumBlueberry,
+  chainConfig,
+  tokenDetails,
+} from "./blockchain/config";
+import { Toaster, toast } from "sonner";
+import {
+  DEFAULT_ETHEREUM_ACCOUNTS,
+  TurnkeyApiTypes,
+  Turnkey,
+} from "@turnkey/sdk-server";
+import { refineNonNull } from "./utils";
 
 interface HomeProps {}
 
+let CHAIN = arbitrumBlueberry;
+const CHAIN_ID = arbitrumBlueberry.id;
 
+const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
 
-import { projectId } from "./constants";
-import { sepolia } from "viem/chains";
-import { tokenDetails } from "./blockchain/config";
-
-import { Toaster, toast } from 'sonner'
-
-const BUNDLER_URL = `https://rpc.zerodev.app/api/v2/bundler/${projectId}`//?provider=GELATO`;
-const PAYMASTER_URL = `https://rpc.zerodev.app/api/v2/paymaster/${projectId}`;
-const PASSKEY_SERVER_URL = `https://passkeys.zerodev.app/api/v3/${projectId}`;
-
-// const blueberry = defineChain({
-//   id: 88_153_591_557,
-//   name: "Blueberry",
-//   nativeCurrency: {
-//     name: "CGT",
-//     symbol: "CGT",
-//     decimals: 18,
-//   },
-//   rpcUrls: {
-//     public: {
-//       http: ["https://rpc.arb-blueberry.gelato.digital"],
-//     },
-//     default: {
-//       http: ["https://rpc.arb-blueberry.gelato.digital"],
-//     },
-//   },
-//   blockExplorers: {
-//     default: {
-//       name: "Block Scout",
-//       url: "https://arb-blueberry.gelatoscout.com",
-//       apiUrl: "https://arb-blueberry.gelatoscout.com/api",
-//     },
-//   },
-//   contracts: {
-//     multicall3: {
-//       address: "0xEc10A32fF915D672a8A062eea9d48370232072Df",
-//       blockCreated: 7,
-//     },
-//   },
-//   testnet: true,
-// });
-
-let CHAIN = sepolia
-const entryPoint = ENTRYPOINT_ADDRESS_V07;
-const publicClient = createPublicClient({
-  transport: http(BUNDLER_URL),
-});
-
-let kernelAccount: any;
-let kernelClient: any;
+interface TWalletDetails {
+  id: string;
+  address: string;
+  subOrgId: string;
+}
+type TAttestation = TurnkeyApiTypes["v1Attestation"];
 
 export default function Home({}: HomeProps) {
+  const { turnkey, passkeyClient } = useTurnkey();
   const [mounted, setMounted] = useState(false);
   const [accountAddress, setAccountAddress] = useState("");
   const [isKernelClientReady, setIsKernelClientReady] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const [isSendingUserOp, setIsSendingUserOp] = useState(false);
   const [userOpHash, setUserOpHash] = useState("");
-  const [userOpStatus, setUserOpStatus] = useState("");
-
+  const [wallet, setWallet] = useState<TWalletDetails | null>(null);
+  const [kernelAccount, setKernelAccount] = useState<any>(null);
+  const [kernelClient, setKernelClient] = useState<any>(null);
   const [logs, setLogs] = useState<(string | JSX.Element)[]>([]);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   const [isDeployed, setIsDeployed] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
-  const [smartAccount, setSmartAccount] = useState<any | null>(null);
-
   const [open, setOpen] = useState<boolean>(false);
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
   const [loadingTokens, setLoadingTokens] = useState<boolean>(false);
 
+  const kernelVersion = KERNEL_V2_4;
 
+  const createKernelClient = async () => {
+    const publicClient = createPublicClient({
+      transport: http(),
+      chain: CHAIN,
+    });
 
-  const kernelVersion = KERNEL_V3_1
+    const kernelClient = createKernelAccountClient({
+      account: kernelAccount,
+      chain: CHAIN,
+      bundlerTransport: http(
+        `https://api.gelato.digital/bundlers/${CHAIN_ID}/rpc?sponsorApiKey=${GELATO_API_KEY}`
+      ),
+      client: publicClient,
+      userOperation: {
+        estimateFeesPerGas: async ({ bundlerClient }) => {
+          return getUserOperationGasPrice(bundlerClient);
+        },
+      },
+    });
+    setKernelClient(kernelClient);
+    setIsKernelClientReady(true);
+    return kernelClient;
+  };
 
-  const createAccountAndClient = async (passkeyValidator: any) => {
-    kernelAccount = await createKernelAccount(publicClient, {
+  const checkIsDeployed = async (address: string) => {
+    let provider = new JsonRpcProvider(CHAIN.rpcUrls.default.http[0]);
+    let code = await provider.getCode(address);
+    if (code == "0x") {
+      setIsDeployed(false);
+    } else {
+      setIsDeployed(true);
+    }
+  };
+
+  // Utility function for human readable datetime
+  const humanReadableDateTime = (): string => {
+    return new Date()
+      .toLocaleString()
+      .replaceAll("/", "-")
+      .replaceAll(":", ".");
+  };
+
+  const handleSmartAccountCreation = async (
+    walletDetails: TWalletDetails,
+    action: string
+  ) => {
+    const viemAccount = await createAccount({
+      client: passkeyClient as any,
+      organizationId: walletDetails.subOrgId,
+      signWith: walletDetails.address,
+      ethereumAddress: walletDetails.address,
+    });
+
+    const publicClient = createPublicClient({
+      transport: http(),
+      chain: CHAIN,
+    });
+
+    // Step 4: Configure ZeroDev Kernel account
+    const entryPoint = getEntryPoint("0.6");
+    const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
+      signer: viemAccount,
+      entryPoint,
+      kernelVersion,
+    });
+
+    // Create Kernel account with validator
+    const kernelAccount = await createKernelAccount(publicClient, {
       plugins: {
-        sudo: passkeyValidator,
+        sudo: ecdsaValidator,
       },
       entryPoint,
       kernelVersion,
     });
 
-
-    kernelClient = createKernelAccountClient({
-      account: kernelAccount,
-      chain: CHAIN,
-      bundlerTransport: http(BUNDLER_URL),
-      entryPoint,
-      middleware: {
-        sponsorUserOperation: async ({ userOperation }) => {
-          const zeroDevPaymaster = await createZeroDevPaymasterClient({
-            chain: CHAIN,
-            transport: http(PAYMASTER_URL),
-            entryPoint,
-          });
-          return zeroDevPaymaster.sponsorUserOperation({
-            userOperation,
-            entryPoint,
-          });
-        },
-      },
-    });
-
-   //let isDeployed = await kernelAccount.isDeployed()
-
-    setIsKernelClientReady(true);
-    checkIsDeployed(kernelAccount.address)
-    setAccountAddress(kernelAccount.address);
-    setUser(kernelAccount.address);
-  };
-
-
-  const checkIsDeployed = async (address:string) => {
-
-    let provider = new JsonRpcProvider(CHAIN.rpcUrls.default.http[0])
-    let code = await provider.getCode(address)
-    if (code == "0x") {
-      setIsDeployed(false)
-    } else {
-      setIsDeployed(true)
+    if (action === "login") {
+      setUser(kernelAccount.address);
+      setWallet(walletDetails);
+      setKernelAccount(kernelAccount);
+      setAccountAddress(kernelAccount.address);
+      checkIsDeployed(kernelAccount.address);
     }
-
-  }
+  };
 
   // Function to be called when "Register" is clicked
   const handleRegister = async () => {
     setIsRegistering(true);
+    try {
+      const subOrgName = `Turnkey Demo - ${humanReadableDateTime()}`;
+      const turnkey = new Turnkey({
+        apiBaseUrl: process.env.NEXT_PUBLIC_TURNKEY_API_BASE_URL!,
+        apiPrivateKey: process.env.NEXT_PUBLIC_TURNKEY_API_PRIVATE_KEY!,
+        apiPublicKey: process.env.NEXT_PUBLIC_TURNKEY_API_PUBLIC_KEY!,
+        defaultOrganizationId: process.env.NEXT_PUBLIC_ORGANIZATION_ID!,
+      });
+      const credential = await passkeyClient?.createUserPasskey({
+        publicKey: {
+          rp: {
+            id: "localhost",
+            name: "Turnkey Passkey",
+          },
+          user: {
+            name: subOrgName,
+            displayName: subOrgName,
+          },
+        },
+      });
+      console.log(credential);
 
-    const webAuthnKey = await toWebAuthnKey({
-      passkeyName: "demo-custom",
-      passkeyServerUrl: PASSKEY_SERVER_URL,
-      mode: WebAuthnMode.Register,
-      passkeyServerHeaders: {},
-    });
+      const apiClient = turnkey.apiClient();
 
-    const passkeyValidator = await toPasskeyValidator(publicClient, {
-      webAuthnKey,
-      entryPoint,
-      kernelVersion,
-      validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2,
-    });
+      const walletName = `Default ETH Wallet`;
 
-    await createAccountAndClient(passkeyValidator);
-    setIsRegistering(false);
-    toast.success("Register done.  Try sending UserOps.", { position: "top-center" });
+      const createSubOrgResponse = await apiClient.createSubOrganization({
+        subOrganizationName: subOrgName,
+        rootQuorumThreshold: 1,
+        rootUsers: [
+          {
+            userName: "New User",
+            apiKeys: [],
+            authenticators: [
+              {
+                authenticatorName: "Gelato Turnkey PoC",
+                challenge: credential?.encodedChallenge as string,
+                attestation: credential?.attestation as TAttestation,
+              },
+            ],
+            oauthProviders: [],
+          },
+        ],
+        wallet: {
+          walletName: walletName,
+          accounts: DEFAULT_ETHEREUM_ACCOUNTS,
+        },
+      });
+
+      const subOrgId = refineNonNull(createSubOrgResponse.subOrganizationId);
+      const wallet = refineNonNull(createSubOrgResponse.wallet);
+
+      const walletId = wallet.walletId;
+      const walletAddress = wallet.addresses[0];
+
+      if (!credential?.encodedChallenge || !credential?.attestation) {
+        return false;
+      }
+      const walletDetails: TWalletDetails = {
+        id: walletId,
+        address: walletAddress,
+        subOrgId: subOrgId,
+      };
+      console.log(walletDetails);
+      await handleSmartAccountCreation(walletDetails, "register");
+      setIsRegistering(false);
+      setOpen(false);
+      setShowSuccessModal(true);
+      toast.success("Wallet created successfully. Login with Passkey.", {
+        position: "top-center",
+      });
+    } catch (error) {
+      console.error(error);
+      setIsRegistering(false);
+      toast.error("Registration failed. Please try again.");
+    }
   };
 
+  // Function to be called when "Login" is clicked
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    try {
+      const loginResponse = await passkeyClient?.login();
+      if (!loginResponse?.organizationId) {
+        return;
+      }
 
-    const webAuthnKey = await toWebAuthnKey({
-      passkeyName: "demo-custom-policy",
-      passkeyServerUrl: PASSKEY_SERVER_URL,
-      mode: WebAuthnMode.Login,
-      passkeyServerHeaders: {},
-    });
+      const currentUserSession = await turnkey?.currentUserSession();
+      if (!currentUserSession) {
+        return;
+      }
 
-    const passkeyValidator = await toPasskeyValidator(publicClient, {
-      webAuthnKey,
-      entryPoint,
-      kernelVersion,
-      validatorContractVersion: PasskeyValidatorContractVersion.V0_0_2,
-    });
+      const walletsResponse = await currentUserSession?.getWallets();
+      if (!walletsResponse?.wallets[0].walletId) {
+        return;
+      }
 
-    await createAccountAndClient(passkeyValidator);
+      const walletId = walletsResponse?.wallets[0].walletId;
+      const walletAccountsResponse =
+        await currentUserSession?.getWalletAccounts({
+          organizationId: loginResponse?.organizationId,
+          walletId,
+        });
 
-    setIsLoggingIn(false);
-    toast.success("Login done. Try sending UserOps.");
+      if (!walletAccountsResponse?.accounts[0].address) {
+        return;
+      }
+
+      const walletDetails = {
+        id: walletId,
+        address: walletAccountsResponse?.accounts[0].address,
+        subOrgId: loginResponse.organizationId,
+      } as TWalletDetails;
+      console.log(walletDetails);
+
+      await handleSmartAccountCreation(walletDetails, "login");
+      setIsLoggingIn(false);
+
+      toast.success("Login done. Try sending UserOps.");
+    } catch (error) {
+      console.error(error);
+      setIsLoggingIn(false);
+      toast.error("Login failed. Please try again.");
+    }
   };
 
-
-  const logout = () => {};
+  const logout = async () => {
+    try {
+      await turnkey?.logoutUser();
+      setWallet(null);
+      setUser(null);
+      setAccountAddress("");
+      setOpen(false);
+      setShowSuccessModal(false);
+    } catch (error) {
+      console.error(error);
+      toast.error("Logout failed. Please try again.");
+    }
+  };
 
   const addLog = useCallback((message: string | JSX.Element) => {
     setLogs((prevLogs) => [...prevLogs, message]);
   }, []);
 
-  const dropToken = async (
-  ) => {
+  const dropToken = async () => {
     setLoadingTokens(true);
     try {
- 
+      const kernelClient = await createKernelClient();
       let data = encodeFunctionData({
         abi: tokenDetails.abi,
         functionName: "drop",
         args: [],
-      })
- 
-   
+      });
       const userOpHash = await kernelClient.sendUserOperation({
-        userOperation: {
-          callData: await kernelAccount.encodeCallData({
+        callData: await kernelClient.account.encodeCalls([
+          {
             to: tokenDetails.address,
             value: BigInt(0),
             data,
-          }),
-        },
+          },
+        ]),
+        maxFeePerGas: BigInt(0),
+        maxPriorityFeePerGas: BigInt(0),
       });
-  
+      console.log(userOpHash);
+
       setUserOpHash(userOpHash);
-  
-      const bundlerClient = kernelClient.extend(
-        bundlerActions(ENTRYPOINT_ADDRESS_V07)
-      );
-      await bundlerClient.waitForUserOperationReceipt({
+
+      const receipt = await kernelClient.waitForUserOperationReceipt({
         hash: userOpHash,
       });
-      checkIsDeployed(accountAddress)
+      console.log(receipt);
+
+      const txHash = receipt.receipt.transactionHash;
+      console.log("User Operation Completed, Transaction Hash:", txHash);
+
+      checkIsDeployed(accountAddress);
       addLog(`Tokens claimed successfully! Transaction: ${userOpHash}`);
       addLog(
         "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
       );
     } catch (error: any) {
-      console.log(error)
-      toast.error(`Error claiming token. Check the logs`)
+      console.log(error);
+      toast.error(`Error claiming token. Check the logs`);
       addLog(
         `Error claiming tokens: ${
           typeof error === "string"
@@ -265,15 +351,26 @@ export default function Home({}: HomeProps) {
     }
   };
 
-
-  const stakeToken = async (
-  ) => {
+  const stakeToken = async () => {
     setLoadingTokens(true);
     try {
-    
+      const kernelClient = await createKernelClient();
+      const provider = new JsonRpcProvider(chainConfig.rpcUrls.default.http[0]);
+      const droppStakeContract = new Contract(
+        tokenDetails.address,
+        tokenDetails.abi,
+        provider
+      );
+      const tokens = +(
+        await droppStakeContract.balanceOf(kernelClient.account.address)
+      ).toString();
+      if (tokens == 0) {
+        toast.error("You don't have any tokens to stake");
+        return;
+      }
       const userOpHash = await kernelClient.sendUserOperation({
-        userOperation: {
-          callData: await kernelAccount.encodeCallData({
+        callData: await kernelClient.account.encodeCalls([
+          {
             to: tokenDetails.address,
             value: BigInt(0),
             data: encodeFunctionData({
@@ -281,25 +378,28 @@ export default function Home({}: HomeProps) {
               functionName: "stake",
               args: [],
             }),
-          }),
-        },
+          },
+        ]),
+        maxFeePerGas: BigInt(0),
+        maxPriorityFeePerGas: BigInt(0),
       });
-  
+
       setUserOpHash(userOpHash);
-  
-      const bundlerClient = kernelClient.extend(
-        bundlerActions(ENTRYPOINT_ADDRESS_V07)
-      );
-      await bundlerClient.waitForUserOperationReceipt({
+
+      const receipt = await kernelClient.waitForUserOperationReceipt({
         hash: userOpHash,
       });
-      checkIsDeployed(accountAddress)
+
+      const txHash = receipt.receipt.transactionHash;
+      console.log("User Operation Completed, Transaction Hash:", txHash);
+
+      checkIsDeployed(accountAddress);
       addLog(`Tokens staked successfully! Transaction: ${userOpHash}`);
       addLog(
         "Now you will be able to sponsor all your transactions after 5 min"
       );
     } catch (error: any) {
-      toast.error(`Error staking token. Check the logs`)
+      toast.error(`Error staking token. Check the logs`);
       addLog(
         `Error staking tokens: ${
           typeof error === "string"
@@ -331,25 +431,26 @@ export default function Home({}: HomeProps) {
             onPasskeyRegister={handleRegister}
             open={open}
             setOpen={setOpen}
+            showSuccessModal={showSuccessModal}
+            setShowSuccessModal={setShowSuccessModal}
+            isRegistering={isRegistering}
+            isLoggingIn={isLoggingIn}
           />
           <div className="flex-1 w-full h-full flex flex-col items-center py-4">
             {!user && <EmptyState />}
             {!!user && (
               <>
                 <br />
-                <UserProfile
-                  address={accountAddress}
-                  isDeployed={isDeployed}
-                />
+                <UserProfile address={accountAddress} isDeployed={isDeployed} />
                 <WalletCard
                   isLoading={loadingTokens}
                   address={accountAddress}
                   onClaimTokens={() => {
-                    addLog('Claiming tokens...');
+                    addLog("Claiming tokens...");
                     dropToken();
                   }}
                   onStakeTokens={() => {
-                    addLog('Staken tokens...');
+                    addLog("Staken tokens...");
                     stakeToken();
                   }}
                 />

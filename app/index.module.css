@@ -1,0 +1,130 @@
+.main {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  padding: 2rem;
+  gap: 30px;
+  font-family: "Inter";
+  max-width: 50ch;
+  margin: auto;
+  background-color: #000000; /* Jet Black background */
+  color: #ffffff; /* White text for readability */
+  border-radius: 16px;
+}
+
+/* Input styles */
+.input {
+  width: 100%;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  border-color: rgba(255, 255, 255, 0.2); /* Subtle border */
+  background-color: rgba(
+    255,
+    255,
+    255,
+    0.1
+  ); /* Light transparency for inputs */
+  color: #ffffff; /* White text */
+  font-family: "Inter";
+}
+
+.label {
+  font-family: "Inter";
+}
+
+.prompt {
+  font-family: "Inter";
+}
+
+/* Button styles */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border-width: 1px;
+  border-style: solid;
+  cursor: pointer;
+  color: #ffffff; /* White text */
+  background-color: #ff3b57; /* Gelato Pink */
+  border-color: #ff7284; /* Peach Gradient */
+  font-family: "Inter";
+  transition: all 0.2s ease-in-out;
+}
+
+.button:hover {
+  background-color: #d9006e; /* Darker Gelato Pink */
+  border-color: #ff3b57; /* Gelato Pink */
+  box-shadow: 0 4px 8px rgba(255, 59, 87, 0.3);
+}
+
+/* Form styles */
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.form input {
+  max-width: 44ch;
+}
+
+/* Info box styles updated for branding */
+.info {
+  display: block;
+  font-size: 0.9em;
+  padding: 10px 16px;
+  margin: 10px;
+  border-radius: 8px;
+  background-color: #1a1a1a; /* Dark gray for info boxes */
+  word-break: break-all;
+  box-shadow: inset 0 0 4px rgba(255, 255, 255, 0.1); /* Subtle shadow */
+  color: #ffffff; /* White text */
+}
+
+/* Highlight text in Gelato Pink */
+.code {
+  font-size: 1em;
+  font-weight: bold;
+  color: #ff3b57; /* Gelato Pink */
+}
+
+/* Explainer text remains subtle */
+.explainer {
+  line-height: 1.4em;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.6); /* Subtle white for explanation */
+}
+
+/* Header text scoped for CSS modules */
+.header {
+  color: #ff3b57; /* Gelato Pink */
+  font-family: "Inter";
+  font-weight: bold;
+}
+
+/* Subtle hover pulse effect for branding */
+@keyframes gelatoPulse {
+  0% {
+    box-shadow: 0 0 4px rgba(255, 59, 87, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(255, 59, 87, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 4px rgba(255, 59, 87, 0.6);
+  }
+}
+
+.button:hover {
+  animation: gelatoPulse 1s infinite;
+}

@@ -76,7 +76,9 @@ export const arbitrumBlueberry = /*#__PURE__*/ defineChain({
   nativeCurrency: { name: "Custom Gas Token", symbol: "CGT", decimals: 18 },
   rpcUrls: {
     default: {
-      http: ["https://rpc.arb-blueberry.gelato.digital"],
+      http: [
+        "https://rpc.arb-blueberry.gelato.digital/b87eafc1609447deaef76737a5210c36",
+      ],
     },
   },
   blockExplorers: {
@@ -87,7 +89,25 @@ export const arbitrumBlueberry = /*#__PURE__*/ defineChain({
   },
   testnet: true,
 });
-export const chainConfig = arbitrumBlueberry;
+export const mikeTestnet = /*#__PURE__*/ defineChain({
+  id: 123420001692,
+  network: "mike-testnet",
+  name: "mike-testnet",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc.mike-testnet.t.raas.gelato.cloud"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Mike Testnet Explorer",
+      url: "https://mike-testnet.cloud.blockscout.com/",
+    },
+  },
+  testnet: true,
+});
+export const chainConfig = mikeTestnet;
 
 export const tokenDetails = {
   address: "0xa2202D3148ac0F0F44b0bED0153248a0524EdA8D",

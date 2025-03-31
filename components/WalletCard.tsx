@@ -1,22 +1,33 @@
 import React from "react";
 import { Address } from "viem";
 import { Timer, Lock, Coins, ExternalLink } from "lucide-react";
-import { chainConfig } from "@/app/blockchain/config";
+import { chainConfig, TOKEN_CONFIG } from "@/app/blockchain/config";
 import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
 import { formatUnits } from "viem";
+
+type GasPaymentMethod = "sponsored" | "erc20";
+type GasToken = "USDC" | "WETH";
 
 const WalletCard = ({
   address,
   onClaimTokens,
   onStakeTokens,
   isLoading,
+  gasPaymentMethod,
+  onGasPaymentMethodChange,
+  gasToken,
+  onGasTokenChange,
 }: {
   address?: string;
   isLoading?: boolean;
   onClaimTokens: () => void;
   onStakeTokens: () => void;
+  gasPaymentMethod: GasPaymentMethod;
+  onGasPaymentMethodChange: (method: GasPaymentMethod) => void;
+  gasToken: GasToken;
+  onGasTokenChange: (token: GasToken) => void;
 }) => {
-  const resultTokens = useTokenHoldings(address as Address);
+  const resultTokens = useTokenHoldings(address as Address, gasToken);
 
   const getExplorerLink = (tokenAddress: string) => {
     return `${chainConfig.blockExplorers.default.url}/token/${tokenAddress}`;
@@ -68,7 +79,9 @@ const WalletCard = ({
               </svg>
               <div>
                 <p className="text-sm text-gray-300 leading-relaxed">
-                  These are sponsored transactions powered by Gelato's 1Balance
+                  {gasPaymentMethod === "sponsored"
+                    ? "These are sponsored transactions powered by Gelato's 1Balance"
+                    : `These transactions will use your ${gasToken} tokens for gas payments`}
                 </p>
                 <p className="text-sm text-gray-300 leading-relaxed">
                   Begin by claiming your tokens to start staking.
@@ -77,6 +90,87 @@ const WalletCard = ({
             </div>
 
             <div className="space-y-3 relative">
+              <div className="flex flex-col items-center gap-4 mb-6">
+                <div className="bg-zinc-900 rounded-xl p-1 flex gap-1">
+                  <button
+                    onClick={() => onGasPaymentMethodChange("sponsored")}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      gasPaymentMethod === "sponsored"
+                        ? "bg-blue-500 text-white"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    Sponsored
+                  </button>
+                  <button
+                    onClick={() => onGasPaymentMethodChange("erc20")}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                      gasPaymentMethod === "erc20"
+                        ? "bg-blue-500 text-white"
+                        : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    ERC20 Gas
+                  </button>
+                </div>
+
+                {gasPaymentMethod === "erc20" && (
+                  <div className="bg-zinc-900 rounded-xl p-1 flex gap-1">
+                    <button
+                      onClick={() => onGasTokenChange("USDC")}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        gasToken === "USDC"
+                          ? "bg-blue-500 text-white"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      USDC
+                    </button>
+                    <button
+                      onClick={() => onGasTokenChange("WETH")}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                        gasToken === "WETH"
+                          ? "bg-blue-500 text-white"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      WETH
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {gasPaymentMethod === "erc20" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400 text-sm">
+                        USDC Balance
+                      </span>
+                      <span className="text-white font-medium">
+                        {formatBalance(
+                          resultTokens.data?.usdcBalance ?? "0",
+                          "6"
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-zinc-400 text-sm">
+                        WETH Balance
+                      </span>
+                      <span className="text-white font-medium">
+                        {formatBalance(
+                          resultTokens.data?.wethBalance ?? "0",
+                          "18"
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div
                 className={`w-full flex flex-col md:flex-row gap-6 mt-6 ${
                   isLoading ? "opacity-50" : ""
@@ -93,7 +187,7 @@ const WalletCard = ({
                         <span className="text-zinc-400 text-sm">Balance</span>
                         <span className="text-white text-2xl font-bold">
                           {formatBalance(
-                            resultTokens.data?.tokens!.toString()!,
+                            resultTokens.data?.tokens?.toString() ?? "0",
                             "18"
                           )}
                         </span>
@@ -128,7 +222,7 @@ const WalletCard = ({
                           Staked Time:
                         </span>
                         <span className="text-white text-2xl font-bold">
-                          {resultTokens?.data?.stakedTimeString}
+                          {resultTokens?.data?.stakedTimeString ?? "Not Staked"}
                         </span>
                       </div>
                     </div>
@@ -154,7 +248,6 @@ const WalletCard = ({
                 <div className="absolute inset-0 flex items-center justify-center bg-zinc-900/20 backdrop-blur-sm rounded-2xl top-[-14px]">
                   <div className="flex flex-col items-center gap-4">
                     <div className="w-8 h-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-zinc-400 text-sm">Loading...</span>
                   </div>
                 </div>
               )}

@@ -1,6 +1,9 @@
 import { QueryClient } from "@tanstack/react-query";
 import { defineChain } from "viem";
+import { inkSepolia } from "viem/chains";
 import { http, createConfig } from "wagmi";
+import { FaEthereum, FaBitcoin } from "react-icons/fa";
+import { HiOutlineCurrencyDollar } from "react-icons/hi";
 
 export const queryClient = new QueryClient();
 export const chess = defineChain({
@@ -40,75 +43,52 @@ export const wagmiConfig = createConfig({
 export const client = wagmiConfig.getClient();
 export type Client = typeof client;
 
-let blueberry = {
-  id: 88153591557,
-  network: "blueberry",
-  name: "Arbitrum Orbit Blueberry",
-  nativeCurrency: {
-    name: "CGT",
-    symbol: "CGT",
+export const chainConfig = inkSepolia;
+export const usdcAddress = "0x85c976Df26e086C5333a4E44bC484877fDF46974";
+export const wethAddress = "0xB4Dfea29f84Abd6cF3c1800ebD3b89Cd8D9048Ac";
+
+export const ZERODEV_PROJECT_ID = ""; // Project Id for Polygon Amoy
+
+export const TOKEN_CONFIG = {
+  USDC: {
+    address: usdcAddress,
+    symbol: "USDC",
+    decimals: 6,
+    icon: HiOutlineCurrencyDollar,
+    paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
+  },
+  WETH: {
+    address: wethAddress,
+    symbol: "WETH",
     decimals: 18,
+    icon: FaEthereum,
+    paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
   },
-  rpcUrls: {
-    public: {
-      http: ["https://rpc.arb-blueberry.gelato.digital"],
-    },
-    default: {
-      http: ["https://rpc.arb-blueberry.gelato.digital"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Block Scout",
-      url: "https://arb-blueberry.gelatoscout.com/",
-    },
-  },
-  contracts: {},
-  testnet: true,
+  // DAI: {
+  //   address: DaiAddress,
+  //   symbol: "DAI",
+  //   decimals: 18,
+  //   icon: HiOutlineCurrencyDollar,
+  //   paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
+  // },
+  // WBTC: {
+  //   address: wbtcAddress,
+  //   symbol: "WBTC",
+  //   decimals: 18,
+  //   icon: FaBitcoin,
+  //   paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
+  // },
+  // USDT: {
+  //   address: usdtAddress,
+  //   symbol: "USDT",
+  //   decimals: 18,
+  //   icon: HiOutlineCurrencyDollar,
+  //   paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
+  // },
 };
-const CHAIN_ID = 88153591557;
-export const arbitrumBlueberry = /*#__PURE__*/ defineChain({
-  id: CHAIN_ID,
-  network: "arbitrum-blueberry",
-  name: "arbitrum-blueberry",
-  nativeCurrency: { name: "Custom Gas Token", symbol: "CGT", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: [
-        "https://rpc.arb-blueberry.gelato.digital/b87eafc1609447deaef76737a5210c36",
-      ],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Arbitrum Blueberry Explorer",
-      url: "https://arb-blueberry.gelatoscout.com/",
-    },
-  },
-  testnet: true,
-});
-export const mikeTestnet = /*#__PURE__*/ defineChain({
-  id: 123420001692,
-  network: "mike-testnet",
-  name: "mike-testnet",
-  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-  rpcUrls: {
-    default: {
-      http: ["https://rpc.mike-testnet.t.raas.gelato.cloud"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Mike Testnet Explorer",
-      url: "https://mike-testnet.cloud.blockscout.com/",
-    },
-  },
-  testnet: true,
-});
-export const chainConfig = mikeTestnet;
 
 export const tokenDetails = {
-  address: "0xa2202D3148ac0F0F44b0bED0153248a0524EdA8D",
+  address: "0x792A9Fd227C690f02beB23678a52BF766849DFc0",
   abi2: [
     "function drop() external",
     "function stake() external",

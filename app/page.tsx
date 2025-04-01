@@ -364,7 +364,6 @@ export default function Home({}: HomeProps) {
       addLog(
         `Tokens claimed successfully! Transaction: ${chainConfig.blockExplorers.default.url}/tx/${txHash}`
       );
-      addLog("Gas fees: Sponsored (0)");
       addLog(
         "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
       );
@@ -438,7 +437,6 @@ export default function Home({}: HomeProps) {
       addLog(
         `Tokens staked successfully! Transaction: ${chainConfig.blockExplorers.default.url}/tx/${txHash}`
       );
-      addLog("Gas fees: Sponsored (0)");
       addLog(
         "Now you will be able to sponsor all your transactions after 5 min"
       );

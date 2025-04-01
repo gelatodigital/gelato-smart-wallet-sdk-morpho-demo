@@ -74,7 +74,6 @@ export default function Home({}: HomeProps) {
 
   const kernelVersion = KERNEL_V3_1;
   const { primaryWallet, handleLogOut } = useDynamicContext();
-
   const connector: any = primaryWallet?.connector;
   const params = {
     withSponsorship: true,
@@ -91,29 +90,18 @@ export default function Home({}: HomeProps) {
 
   const createSponsoredKernelClient = async () => {
     console.log("Creating sponsored kernel client");
-    if (!connector) {
-      console.log("No connector found");
-      return;
-    }
-    const publicClient = createPublicClient({
-      transport: http(),
-      chain: CHAIN,
-    });
-
     const kernelClient = createKernelAccountClient({
       account: client.account,
       chain: CHAIN,
       bundlerTransport: http(
-        `https://api.gelato.digital/bundlers/${CHAIN_ID}/rpc?sponsorApiKey=${GELATO_API_KEY}`
+        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc?sponsorApiKey=${GELATO_API_KEY}`
       ),
-      client: publicClient,
       userOperation: {
         estimateFeesPerGas: async ({ bundlerClient }) => {
           return getUserOperationGasPrice(bundlerClient);
         },
       },
     });
-    console.log(kernelClient);
     setUser(kernelClient.account.address);
     setKernelAccount(kernelClient.account);
     setAccountAddress(kernelClient.account.address);
@@ -161,11 +149,10 @@ export default function Home({}: HomeProps) {
         },
       },
     });
-    console.log(kernelClient);
-    setUser(kernelAccount.address);
-    setKernelAccount(kernelAccount);
-    setAccountAddress(kernelAccount.address);
-    checkIsDeployed(kernelAccount.address);
+    setUser(kernelClient.account.address);
+    setKernelAccount(kernelClient.account);
+    setAccountAddress(kernelClient.account.address);
+    checkIsDeployed(kernelClient.account.address);
     setKernelClient(kernelClient);
     setIsKernelClientReady(true);
     return kernelClient;
@@ -353,12 +340,11 @@ export default function Home({}: HomeProps) {
 
       const calls = [
         {
-          to: zeroAddress,
+          to: tokenDetails.address as `0x${string}`,
           value: BigInt(0),
-          data: "0x",
+          data,
         },
       ];
-      console.log(calls);
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
         maxFeePerGas: BigInt(0),

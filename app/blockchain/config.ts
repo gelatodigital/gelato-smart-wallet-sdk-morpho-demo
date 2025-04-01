@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { defineChain } from "viem";
-import { inkSepolia, megaethTestnet, odysseyTestnet } from "viem/chains";
+import { sepolia } from "viem/chains";
 import { http, createConfig } from "wagmi";
 import { FaEthereum, FaBitcoin } from "react-icons/fa";
 import { HiOutlineCurrencyDollar } from "react-icons/hi";
@@ -39,15 +39,14 @@ export const wagmiConfig = createConfig({
     [chess.id]: http(),
   },
 });
-
 export const client = wagmiConfig.getClient();
 export type Client = typeof client;
 
-export const chainConfig = megaethTestnet;
-export const usdcAddress = "0x85c976Df26e086C5333a4E44bC484877fDF46974";
-export const wethAddress = "0xB4Dfea29f84Abd6cF3c1800ebD3b89Cd8D9048Ac";
+export const chainConfig = sepolia;
+export const usdcAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
+export const wethAddress = "0x2335b1CDB8E52E2780acC8b94c90Fed6dB9FF301";
 
-export const ZERODEV_PROJECT_ID = ""; // Project Id for MegaETH Tesstnet
+export const ZERODEV_PROJECT_ID = ""; // Project Id for MegaEth Testnet
 
 export const TOKEN_CONFIG = {
   USDC: {
@@ -55,7 +54,7 @@ export const TOKEN_CONFIG = {
     symbol: "USDC",
     decimals: 6,
     icon: HiOutlineCurrencyDollar,
-    paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
+    paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?provider=PIMLICO`,
   },
   WETH: {
     address: wethAddress,
@@ -88,7 +87,7 @@ export const TOKEN_CONFIG = {
 };
 
 export const tokenDetails = {
-  address: "0x792A9Fd227C690f02beB23678a52BF766849DFc0",
+  address: "0xE83d80DD2462a053390863505D56D40D6F028E92",
   abi2: [
     "function drop() external",
     "function stake() external",

@@ -8,8 +8,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { parseEther, formatUnits } from "viem";
-import { getERC20PaymasterApproveCall } from "@zerodev/sdk";
+import { parseEther, formatUnits, http } from "viem";
+import {
+  createZeroDevPaymasterClient,
+  getERC20PaymasterApproveCall,
+} from "@zerodev/sdk";
 import { getEntryPoint } from "@zerodev/sdk/constants";
 import { zeroAddress } from "viem";
 import { TOKEN_CONFIG, chainConfig } from "@/app/blockchain/config";
@@ -58,7 +61,10 @@ export function GasEstimationModal({
       setIsEstimating(true);
       const gasTokenAddress = TOKEN_CONFIG[gasToken].address;
       const entryPoint = getEntryPoint("0.7");
-
+      const paymasterClient: any = createZeroDevPaymasterClient({
+        chain: chainConfig,
+        transport: http(TOKEN_CONFIG[gasToken].paymasterUrl),
+      });
       // Encode the actual transaction data
       const data = encodeFunctionData({
         abi: tokenDetails.abi,
@@ -69,7 +75,7 @@ export function GasEstimationModal({
       // Encode transaction calls for gas estimation
       const callData = await kernelClient.account.encodeCalls([
         // Approve the paymaster to spend gas tokens
-        await getERC20PaymasterApproveCall(kernelClient.paymaster, {
+        await getERC20PaymasterApproveCall(paymasterClient, {
           gasToken: gasTokenAddress as `0x${string}`,
           approveAmount: parseEther("1"),
           entryPoint,
@@ -85,7 +91,7 @@ export function GasEstimationModal({
       const userOp = await kernelClient.prepareUserOperation({ callData });
 
       // Estimate the gas cost in ERC20 tokens using the paymaster client
-      const result = await kernelClient.paymaster.estimateGasInERC20({
+      const result = await paymasterClient.estimateGasInERC20({
         userOperation: userOp,
         gasTokenAddress: gasTokenAddress,
         entryPoint,
@@ -164,15 +170,28 @@ export function GasEstimationModal({
                   </a>
                 </div>
                 <div className="pt-2">
-                  <a
-                    href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
-                  >
-                    Mint {TOKEN_CONFIG[gasToken].symbol} for your smart account
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  {gasToken === "USDC" ? (
+                    <a
+                      href="https://faucet.circle.com/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                    >
+                      Get 10 USDC from Circle Faucet
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  ) : (
+                    <a
+                      href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                    >
+                      Mint {TOKEN_CONFIG[gasToken].symbol} for your smart
+                      account
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

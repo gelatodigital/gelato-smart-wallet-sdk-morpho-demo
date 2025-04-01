@@ -20,11 +20,11 @@ export const EmptyState = () => {
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold tracking-tight">
-              Welcome to Gelato Demo
+              Welcome to Gelato 7702 Demo
             </h2>
             <p className="text-gray-400">
-              Experience seamless authentication with Dynamic's login methods,
-              powered by Gelato AA.
+              Experience seamless authentication with Dynamic's 7702 login
+              methods, powered by Gelato AA.
             </p>
           </div>
         </div>

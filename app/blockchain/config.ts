@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { defineChain } from "viem";
-import { inkSepolia } from "viem/chains";
+import { inkSepolia, megaethTestnet, odysseyTestnet } from "viem/chains";
 import { http, createConfig } from "wagmi";
 import { FaEthereum, FaBitcoin } from "react-icons/fa";
 import { HiOutlineCurrencyDollar } from "react-icons/hi";
@@ -43,11 +43,11 @@ export const wagmiConfig = createConfig({
 export const client = wagmiConfig.getClient();
 export type Client = typeof client;
 
-export const chainConfig = inkSepolia;
+export const chainConfig = megaethTestnet;
 export const usdcAddress = "0x85c976Df26e086C5333a4E44bC484877fDF46974";
 export const wethAddress = "0xB4Dfea29f84Abd6cF3c1800ebD3b89Cd8D9048Ac";
 
-export const ZERODEV_PROJECT_ID = ""; // Project Id for Polygon Amoy
+export const ZERODEV_PROJECT_ID = ""; // Project Id for MegaETH Tesstnet
 
 export const TOKEN_CONFIG = {
   USDC: {

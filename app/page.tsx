@@ -5,16 +5,20 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Header from "@/components/Header";
 import TerminalLog from "@/components/TerminalLog";
 import WalletCard from "@/components/WalletCard";
-import { signerToEcdsaValidator } from "@zerodev/ecdsa-validator";
 import {
-  createKernelAccount,
   createKernelAccountClient,
   getUserOperationGasPrice,
   createZeroDevPaymasterClient,
   getERC20PaymasterApproveCall,
 } from "@zerodev/sdk";
 import { getEntryPoint, KERNEL_V3_1 } from "@zerodev/sdk/constants";
-import { encodeFunctionData, parseEther, formatUnits } from "viem";
+import {
+  encodeFunctionData,
+  parseEther,
+  formatUnits,
+  zeroAddress,
+  createPublicClient,
+} from "viem";
 import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
 import { Contract, JsonRpcProvider } from "ethers";
@@ -22,11 +26,10 @@ import { EmptyState } from "@/components/EmptyState";
 import { chainConfig, TOKEN_CONFIG, tokenDetails } from "./blockchain/config";
 import { Toaster, toast } from "sonner";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-import { entryPoint07Address } from "viem/account-abstraction";
-import { toSafeSmartAccount } from "permissionless/accounts";
 import { GasEstimationModal } from "@/components/GasEstimationModal";
 import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
 import { Address, Log } from "viem";
+import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
 
 interface HomeProps {}
 type GasPrices = {
@@ -71,6 +74,16 @@ export default function Home({}: HomeProps) {
 
   const kernelVersion = KERNEL_V3_1;
   const { primaryWallet, handleLogOut } = useDynamicContext();
+
+  const connector: any = primaryWallet?.connector;
+  const params = {
+    withSponsorship: true,
+  };
+  let client: any;
+  if (isZeroDevConnector(connector)) {
+    client = connector?.getAccountAbstractionProvider(params);
+  }
+
   const { data: tokenHoldings } = useTokenHoldings(
     accountAddress as Address,
     gasToken
@@ -78,27 +91,17 @@ export default function Home({}: HomeProps) {
 
   const createSponsoredKernelClient = async () => {
     console.log("Creating sponsored kernel client");
-    const publicClient = await (primaryWallet as any).getPublicClient();
-    const walletClient = await (primaryWallet as any).getWalletClient();
-    const entryPoint = getEntryPoint("0.7");
-    const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
-      signer: walletClient,
-      entryPoint,
-      kernelVersion,
+    if (!connector) {
+      console.log("No connector found");
+      return;
+    }
+    const publicClient = createPublicClient({
+      transport: http(),
+      chain: CHAIN,
     });
-
-    // Create Kernel account with validator
-    const kernelAccount = await createKernelAccount(publicClient, {
-      plugins: {
-        sudo: ecdsaValidator,
-      },
-      entryPoint,
-      kernelVersion,
-    });
-    console.log(kernelAccount.address);
 
     const kernelClient = createKernelAccountClient({
-      account: kernelAccount,
+      account: client.account,
       chain: CHAIN,
       bundlerTransport: http(
         `https://api.gelato.digital/bundlers/${CHAIN_ID}/rpc?sponsorApiKey=${GELATO_API_KEY}`
@@ -110,10 +113,11 @@ export default function Home({}: HomeProps) {
         },
       },
     });
-    setUser(kernelAccount.address);
-    setKernelAccount(kernelAccount);
-    setAccountAddress(kernelAccount.address);
-    checkIsDeployed(kernelAccount.address);
+    console.log(kernelClient);
+    setUser(kernelClient.account.address);
+    setKernelAccount(kernelClient.account);
+    setAccountAddress(kernelClient.account.address);
+    checkIsDeployed(kernelClient.account.address);
     setKernelClient(kernelClient);
     setIsKernelClientReady(true);
     return kernelClient;
@@ -121,26 +125,7 @@ export default function Home({}: HomeProps) {
 
   const createERC20KernelClient = async () => {
     console.log("Creating ERC20 kernel client");
-    const publicClient = await (primaryWallet as any).getPublicClient();
-    const walletClient = await (primaryWallet as any).getWalletClient();
     const gasTokenAddress = TOKEN_CONFIG[gasToken].address;
-    const entryPoint = getEntryPoint("0.7");
-
-    const ecdsaValidator = await signerToEcdsaValidator(publicClient, {
-      signer: walletClient,
-      entryPoint,
-      kernelVersion,
-    });
-
-    // Create Kernel account with validator
-    const kernelAccount = await createKernelAccount(publicClient, {
-      plugins: {
-        sudo: ecdsaValidator,
-      },
-      entryPoint,
-      kernelVersion,
-    });
-    console.log(kernelAccount.address);
 
     // Create a ZeroDev Paymaster client for gas sponsorship
     const paymasterClient: any = createZeroDevPaymasterClient({
@@ -149,7 +134,7 @@ export default function Home({}: HomeProps) {
     });
     // Initialize the Kernel Smart Account Client with bundler and erc20 paymaster support
     const kernelClient: any = createKernelAccountClient({
-      account: kernelAccount,
+      account: client.account,
       chain: CHAIN,
       bundlerTransport: http(
         `https://api.staging.gelato.digital/bundlers/${CHAIN.id}/rpc`
@@ -368,12 +353,12 @@ export default function Home({}: HomeProps) {
 
       const calls = [
         {
-          to: tokenDetails.address as `0x${string}`,
+          to: zeroAddress,
           value: BigInt(0),
-          data,
+          data: "0x",
         },
       ];
-
+      console.log(calls);
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
         maxFeePerGas: BigInt(0),
@@ -487,13 +472,12 @@ export default function Home({}: HomeProps) {
 
   useEffect(() => {
     async function createAccount() {
-      if (primaryWallet) {
-        setIsInitializing(true);
+      if (client) {
         try {
-          console.log(primaryWallet);
+          console.log(client);
           const kernelClient = await createKernelClient(gasPaymentMethod);
           console.log(kernelClient);
-          setUser(primaryWallet.address);
+          // setUser(primaryWallet.address);
         } catch (error) {
           console.error("Failed to create kernel client:", error);
           toast.error("Failed to initialize wallet");
@@ -503,7 +487,12 @@ export default function Home({}: HomeProps) {
       }
     }
     createAccount();
-  }, [primaryWallet, gasPaymentMethod, gasToken]);
+  }, [client, gasPaymentMethod, gasToken]);
+  useEffect(() => {
+    if (primaryWallet) {
+      setIsInitializing(true);
+    }
+  }, [primaryWallet]);
 
   useEffect(() => {
     if (tokenHoldings) {
@@ -561,6 +550,7 @@ export default function Home({}: HomeProps) {
               </>
             )}
           </div>
+
           <TerminalLog
             logs={logs}
             isOpen={isTerminalOpen}

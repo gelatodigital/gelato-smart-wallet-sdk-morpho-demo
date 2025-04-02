@@ -16,70 +16,77 @@ interface TokenHoldingsResponse {
   wethBalance: string;
 }
 
+// Create a single provider instance
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+const publicClient = createPublicClient({
+  chain: chainConfig,
+  transport: http(process.env.NEXT_PUBLIC_RPC_URL),
+});
+
 export const useTokenHoldings = (
   address: Address,
   gasToken: "USDC" | "WETH"
 ) => {
-  const publicClient = createPublicClient({
-    chain: chainConfig,
-    transport: http(chainConfig.rpcUrls.default.http[0]),
-  });
-
   return useQuery({
     queryKey: ["tokenHoldings", address, gasToken],
     queryFn: async (): Promise<TokenHoldingsResponse> => {
       if (!address) throw new Error("Address is required");
 
-      const provider = new JsonRpcProvider(chainConfig.rpcUrls.default.http[0]);
+      // Create contract instance once
       const droppStakeContract = new Contract(
         tokenDetails.address,
         tokenDetails.abi,
         provider
       );
-      const tokens = +(await droppStakeContract.balanceOf(address)).toString();
-      const stakedTimestamp =
-        +(await droppStakeContract.staked(address)).toString() * 1000;
+
+      // Batch the contract calls
+      const [tokens, stakedTimestamp] = await Promise.all([
+        droppStakeContract.balanceOf(address),
+        droppStakeContract.staked(address),
+      ]);
+
+      const stakedTimeMs = +stakedTimestamp.toString() * 1000;
       const stakedTimeString =
-        stakedTimestamp == 0
+        stakedTimeMs === 0
           ? "Not Staked"
-          : new Date(stakedTimestamp).toLocaleTimeString();
-      let now = Date.now();
+          : new Date(stakedTimeMs).toLocaleTimeString();
 
-      let sec =
-        stakedTimestamp == 0 ? 0 : Math.floor((now - stakedTimestamp) / 1000);
+      const now = Date.now();
+      const sec =
+        stakedTimeMs === 0 ? 0 : Math.floor((now - stakedTimeMs) / 1000);
 
-      // Fetch USDC balance
-      const usdcBalance = (await publicClient.readContract({
-        abi: parseAbi([
-          "function balanceOf(address account) returns (uint256)",
-        ]),
-        address: TOKEN_CONFIG["USDC"].address as Address,
-        functionName: "balanceOf",
-        args: [address],
-      })) as bigint;
-
-      // Fetch WETH balance
-      const wethBalance = (await publicClient.readContract({
-        abi: parseAbi([
-          "function balanceOf(address account) returns (uint256)",
-        ]),
-        address: TOKEN_CONFIG["WETH"].address as Address,
-        functionName: "balanceOf",
-        args: [address],
-      })) as bigint;
+      // Batch the balance checks
+      const [usdcBalance, wethBalance] = await Promise.all([
+        publicClient.readContract({
+          abi: parseAbi([
+            "function balanceOf(address account) returns (uint256)",
+          ]),
+          address: TOKEN_CONFIG["USDC"].address as Address,
+          functionName: "balanceOf",
+          args: [address],
+        }),
+        publicClient.readContract({
+          abi: parseAbi([
+            "function balanceOf(address account) returns (uint256)",
+          ]),
+          address: TOKEN_CONFIG["WETH"].address as Address,
+          functionName: "balanceOf",
+          args: [address],
+        }),
+      ]);
 
       return {
-        tokens,
+        tokens: +tokens.toString(),
         stakedTimeString,
         sec,
-        usdcBalance: usdcBalance.toString(),
-        wethBalance: wethBalance.toString(),
+        usdcBalance: (usdcBalance as bigint).toString(),
+        wethBalance: (wethBalance as bigint).toString(),
       };
     },
     enabled: !!address,
-    refetchInterval: 2000,
+    refetchInterval: 10000, // Increase to 10 seconds
     refetchIntervalInBackground: true,
-    staleTime: 0,
-    gcTime: 1000 * 60 * 10,
+    staleTime: 5000, // Consider data fresh for 5 seconds
+    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
   });
 };

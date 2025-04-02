@@ -35,6 +35,7 @@ import { GasEstimationModal } from "@/components/GasEstimationModal";
 import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
 import { Address, Log } from "viem";
 import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
+import { useQuery } from "@tanstack/react-query";
 
 interface HomeProps {}
 type GasPrices = {
@@ -52,6 +53,20 @@ const CHAIN_ID = chainConfig.id;
 
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
 
+// Create a single provider instance outside the component
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+
+// Create a memoized deployment check function
+const checkIsDeployed = async (address: string) => {
+  try {
+    const code = await provider.getCode(address);
+    return code !== "0x";
+  } catch (error) {
+    console.error("Error checking deployment status:", error);
+    return false;
+  }
+};
+
 export default function Home({}: HomeProps) {
   const [accountAddress, setAccountAddress] = useState("");
   const [isKernelClientReady, setIsKernelClientReady] = useState(false);
@@ -65,7 +80,6 @@ export default function Home({}: HomeProps) {
   >("sponsored");
   const [gasToken, setGasToken] = useState<"USDC" | "WETH">("USDC");
 
-  const [isDeployed, setIsDeployed] = useState<boolean>(false);
   const [user, setUser] = useState<any>(null);
   const [open, setOpen] = useState<boolean>(false);
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
@@ -92,36 +106,26 @@ export default function Home({}: HomeProps) {
     gasToken
   );
 
+  // Use React Query for deployment status
+  const { data: isDeployed } = useQuery({
+    queryKey: ["isDeployed", accountAddress],
+    queryFn: () => checkIsDeployed(accountAddress),
+    enabled: !!accountAddress,
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+  });
+
   const createSponsoredKernelClient = async () => {
     console.log("Creating sponsored kernel client");
-    const paymasterClient: any = createZeroDevPaymasterClient({
-      chain: CHAIN,
-      transport: http(
-        `https://rpc.zerodev.app/api/v3/${ZERODEV_PROJECT_ID}/chain/${CHAIN.id}?provider=GELATO&selfFunded=true`
-      ),
-    });
     const kernelClient = createKernelAccountClient({
       account: client.account,
       chain: CHAIN,
       bundlerTransport: http(
-        `https://api.staging.gelato.digital/bundlers/${CHAIN.id}/rpc`
+        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc?sponsorApiKey=${GELATO_API_KEY}`
       ),
-      paymaster: paymasterClient,
       userOperation: {
-        // Function to estimate gas fees dynamically from the bundler
         estimateFeesPerGas: async ({ bundlerClient }) => {
-          const gasPrices =
-            await bundlerClient.request<EthGetUserOperationGasPriceRpc>({
-              method: "eth_getUserOperationGasPrice",
-              params: [],
-            });
-
-          console.log("Gas Prices:", gasPrices);
-
-          return {
-            maxFeePerGas: BigInt(gasPrices.maxFeePerGas),
-            maxPriorityFeePerGas: BigInt(gasPrices.maxPriorityFeePerGas),
-          };
+          return getUserOperationGasPrice(bundlerClient);
         },
       },
     });
@@ -148,7 +152,7 @@ export default function Home({}: HomeProps) {
       account: client.account,
       chain: CHAIN,
       bundlerTransport: http(
-        `https://api.staging.gelato.digital/bundlers/${CHAIN.id}/rpc`
+        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc`
       ),
       paymaster: paymasterClient,
       paymasterContext: {
@@ -162,8 +166,6 @@ export default function Home({}: HomeProps) {
               method: "eth_getUserOperationGasPrice",
               params: [],
             });
-
-          console.log("Gas Prices:", gasPrices);
 
           return {
             maxFeePerGas: BigInt(gasPrices.maxFeePerGas),
@@ -179,16 +181,6 @@ export default function Home({}: HomeProps) {
     setKernelClient(kernelClient);
     setIsKernelClientReady(true);
     return kernelClient;
-  };
-
-  const checkIsDeployed = async (address: string) => {
-    let provider = new JsonRpcProvider(CHAIN.rpcUrls.default.http[0]);
-    let code = await provider.getCode(address);
-    if (code == "0x") {
-      setIsDeployed(false);
-    } else {
-      setIsDeployed(true);
-    }
   };
 
   // Utility function for human readable datetime
@@ -215,6 +207,26 @@ export default function Home({}: HomeProps) {
   const addLog = useCallback((message: string | JSX.Element) => {
     setLogs((prevLogs) => [...prevLogs, message]);
   }, []);
+
+  const addTaskStatusLog = useCallback(
+    (userOpHash: string) => {
+      const taskStatusUrl = `https://relay.gelato.digital/tasks/status/${userOpHash}`;
+      addLog(
+        <span>
+          View UserOp status:{" "}
+          <a
+            href={taskStatusUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:text-blue-400 underline"
+          >
+            {taskStatusUrl}
+          </a>
+        </span>
+      );
+    },
+    [addLog]
+  );
 
   const createKernelClient = async (method: "sponsored" | "erc20") => {
     if (method === "sponsored") {
@@ -262,7 +274,7 @@ export default function Home({}: HomeProps) {
     }
   };
 
-  const handleGasEstimationConfirm = async () => {
+  const handleGasEstimationConfirm = async (estimatedGas: string) => {
     setShowGasEstimation(false);
     setLoadingTokens(true);
     try {
@@ -287,10 +299,14 @@ export default function Home({}: HomeProps) {
         },
       ];
 
+      // Add estimated gas to logs
+      addLog(`Estimated gas for transaction: ${estimatedGas}`);
+
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
       });
       console.log(userOpHash);
+      addTaskStatusLog(userOpHash);
 
       setUserOpHash(userOpHash);
 
@@ -321,9 +337,13 @@ export default function Home({}: HomeProps) {
         addLog(
           "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
         );
+        toast.success(
+          "Tokens claimed successfully! Check the logs for details."
+        );
       } else {
-        addLog(
-          "Now you will be able to sponsor all your transactions after 5 min"
+        addLog("Tokens staked successfully, Check the dashboard for updates");
+        toast.success(
+          "Tokens staked successfully! Check the logs for details."
         );
       }
     } catch (error: any) {
@@ -370,7 +390,11 @@ export default function Home({}: HomeProps) {
       ];
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
+        maxFeePerGas: BigInt(0),
+        maxPriorityFeePerGas: BigInt(0),
       });
+      console.log(userOpHash);
+      addTaskStatusLog(userOpHash);
 
       setUserOpHash(userOpHash);
 
@@ -388,6 +412,7 @@ export default function Home({}: HomeProps) {
       addLog(
         "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
       );
+      toast.success("Tokens claimed successfully! Check the logs for details.");
     } catch (error: any) {
       console.log(error);
       toast.error(`Error claiming token. Check the logs`);
@@ -413,7 +438,6 @@ export default function Home({}: HomeProps) {
     setLoadingTokens(true);
     try {
       const kernelClient = await createKernelClient(gasPaymentMethod);
-      const provider = new JsonRpcProvider(chainConfig.rpcUrls.default.http[0]);
       const dropStakeContract = new Contract(
         tokenDetails.address,
         tokenDetails.abi,
@@ -441,8 +465,11 @@ export default function Home({}: HomeProps) {
 
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
+        maxFeePerGas: BigInt(0),
+        maxPriorityFeePerGas: BigInt(0),
       });
-
+      console.log(userOpHash);
+      addTaskStatusLog(userOpHash);
       setUserOpHash(userOpHash);
 
       const receipt = await kernelClient.waitForUserOperationReceipt({
@@ -459,6 +486,7 @@ export default function Home({}: HomeProps) {
       addLog(
         "Now you will be able to sponsor all your transactions after 5 min"
       );
+      toast.success("Tokens staked successfully! Check the logs for details.");
     } catch (error: any) {
       toast.error(`Error staking token. Check the logs`);
       addLog(
@@ -477,9 +505,7 @@ export default function Home({}: HomeProps) {
     async function createAccount() {
       if (client) {
         try {
-          console.log(client);
           const kernelClient = await createKernelClient(gasPaymentMethod);
-          console.log(kernelClient);
           // setUser(primaryWallet.address);
         } catch (error) {
           console.error("Failed to create kernel client:", error);

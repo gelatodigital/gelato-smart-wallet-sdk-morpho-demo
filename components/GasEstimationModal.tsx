@@ -24,7 +24,7 @@ import { entryPoint07Address } from "viem/account-abstraction";
 interface GasEstimationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (estimatedGas: string) => void;
   kernelClient: any;
   gasToken: "USDC" | "WETH";
   tokenBalance: string;
@@ -222,7 +222,7 @@ export function GasEstimationModal({
             {isEstimating ? "Estimating..." : "Estimate Gas"}
           </Button>
           <Button
-            onClick={onConfirm}
+            onClick={() => onConfirm(estimatedGas)}
             disabled={!estimatedGas || isEstimating}
             className="text-white text-sm font-bold duration-200 font-semibold px-8 py-3
               rounded-xl bg-gradient-to-r from-[#00AEFA] to-[#00AEFA]

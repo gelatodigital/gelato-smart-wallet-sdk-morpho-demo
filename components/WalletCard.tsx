@@ -80,7 +80,7 @@ const WalletCard = ({
               <div>
                 <p className="text-sm text-gray-300 leading-relaxed">
                   {gasPaymentMethod === "sponsored"
-                    ? "Get 2 sponsored transactions every hour. If you stake, after 5 min you will be able to enjoy free txs"
+                    ? "These are sponsored transactions powered by Gelato's 1Balance"
                     : `These transactions will use your ${gasToken} tokens for gas payments`}
                 </p>
                 <p className="text-sm text-gray-300 leading-relaxed">

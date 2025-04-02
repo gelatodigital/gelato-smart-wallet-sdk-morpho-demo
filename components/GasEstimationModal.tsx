@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { parseEther, formatUnits, http } from "viem";
 import {
   createZeroDevPaymasterClient,
@@ -19,6 +19,7 @@ import { TOKEN_CONFIG, chainConfig } from "@/app/blockchain/config";
 import { tokenDetails } from "@/app/blockchain/config";
 import { encodeFunctionData } from "viem";
 import { ExternalLink } from "lucide-react";
+import { entryPoint07Address } from "viem/account-abstraction";
 
 interface GasEstimationModalProps {
   isOpen: boolean;
@@ -42,6 +43,12 @@ export function GasEstimationModal({
   const [estimatedGas, setEstimatedGas] = useState<string>("");
   const [isEstimating, setIsEstimating] = useState(false);
 
+  useEffect(() => {
+    if (isOpen) {
+      setEstimatedGas("");
+    }
+  }, [isOpen]);
+
   const formatBalance = (value: string, decimals: number) => {
     try {
       return parseFloat(formatUnits(BigInt(value), decimals)).toLocaleString(
@@ -61,10 +68,7 @@ export function GasEstimationModal({
       setIsEstimating(true);
       const gasTokenAddress = TOKEN_CONFIG[gasToken].address;
       const entryPoint = getEntryPoint("0.7");
-      const paymasterClient: any = createZeroDevPaymasterClient({
-        chain: chainConfig,
-        transport: http(TOKEN_CONFIG[gasToken].paymasterUrl),
-      });
+
       // Encode the actual transaction data
       const data = encodeFunctionData({
         abi: tokenDetails.abi,
@@ -75,7 +79,7 @@ export function GasEstimationModal({
       // Encode transaction calls for gas estimation
       const callData = await kernelClient.account.encodeCalls([
         // Approve the paymaster to spend gas tokens
-        await getERC20PaymasterApproveCall(paymasterClient, {
+        await getERC20PaymasterApproveCall(kernelClient.paymaster, {
           gasToken: gasTokenAddress as `0x${string}`,
           approveAmount: parseEther("1"),
           entryPoint,
@@ -91,10 +95,10 @@ export function GasEstimationModal({
       const userOp = await kernelClient.prepareUserOperation({ callData });
 
       // Estimate the gas cost in ERC20 tokens using the paymaster client
-      const result = await paymasterClient.estimateGasInERC20({
+      const result = await kernelClient.paymaster.estimateGasInERC20({
         userOperation: userOp,
         gasTokenAddress: gasTokenAddress,
-        entryPoint,
+        entryPoint: entryPoint07Address,
       });
 
       setEstimatedGas(

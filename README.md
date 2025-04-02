@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EIP 7702 Integration with AA powered by Gelato
 
-## Getting Started
+A Next.js application demonstrating the integration of EIP 7702 (Account Abstraction) using Gelato's infrastructure. This project showcases how to use EOAs as smart contract wallets with advanced features like gasless transactions and paying gas with ERC20 tokens.
 
-First, run the development server:
+## Features
+
+- Sponsored transactions using Gelato Bundler via 1Balance
+- Paying gas with ERC20 tokens (e.g., USDC, WETH) with accurate gas estimations
+
+## Prerequisites
+
+- Node.js 18.x or later
+- Yarn package manager
+- A Gelato API key
+- A Dynamic Environment ID
+- A ZeroDev project ID
+- An RPC URL for your target network (Sepolia)
+
+## Installation
+
+1. Clone the repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/gelatodigital/eip7702-next-demo.git
+cd eip7702-next-demo
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Checkout to 7702 Branch:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+git checkout dynamic7702-zerodev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. Install dependencies:
 
-## Learn More
+```bash
+yarn install
+```
 
-To learn more about Next.js, take a look at the following resources:
+4. Set up environment variables:
+   - Copy `.env.local.example` to `.env.local`
+   - Fill in the required environment variables:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```env
+NEXT_PUBLIC_GELATO_API_KEY="your-gelato-api-key"
+NEXT_PUBLIC_RPC_URL="your-rpc-url"
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+5. Configure Dynamic Environment ID:
+   - Open `app/providers.tsx`
+   - Replace the `environmentId` with your Dynamic project ID:
 
-## Deploy on Vercel
+```typescript
+environmentId: "your-dynamic-environment-id";
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+6. Configure ZeroDev Project ID:
+   - Open `app/blockchain/config.ts`
+   - Update the ZeroDev project ID with your own:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```typescript
+ZERODEV_PROJECT_ID: "your-zerodev-project-id";
+```
+
+## Development
+
+Run the development server:
+
+```bash
+yarn run dev
+```
+
+The application will be available at `http://localhost:3000`
+
+## Project Structure
+
+```
+├── app/                    # Next.js app directory
+│   ├── providers.tsx       # Web3 providers configuration
+│   └── page.tsx           # Main application page
+├── components/            # React components
+├── lib/                   # Utility functions and configurations
+├── public/               # Static assets
+```
+
+## Key Dependencies
+
+- `@dynamic-labs/sdk-react-core`: Core Dynamic SDK for Web3 authentication
+- `@dynamic-labs/ethereum-aa`: Account Abstraction integration
+- `@dynamic-labs/ethereum`: Ethereum wallet connectors
+- `@zerodev/sdk`: ZeroDev smart contract wallet SDK
+- `viem` v2.23.9: Modern Ethereum library
+- `ethers`: Ethereum library

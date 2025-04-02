@@ -80,7 +80,7 @@ const WalletCard = ({
               <div>
                 <p className="text-sm text-gray-300 leading-relaxed">
                   {gasPaymentMethod === "sponsored"
-                    ? "These are sponsored transactions powered by Gelato's 1Balance"
+                    ? "Get 2 sponsored transactions every hour. If you stake, after 5 min you will be able to enjoy free txs"
                     : `These transactions will use your ${gasToken} tokens for gas payments`}
                 </p>
                 <p className="text-sm text-gray-300 leading-relaxed">
@@ -226,7 +226,20 @@ const WalletCard = ({
                         </span>
                       </div>
                     </div>
-
+                    {gasPaymentMethod === "sponsored" && (
+                      <div className="flex flex-col sm:items-center gap-1">
+                        <div className="flex items-center gap-2 text-zinc-400 text-sm">
+                          <span>Endless sponsor:</span>
+                          <span className="text-white font-medium">
+                            {resultTokens.data?.stakedTimeString == "Not Staked"
+                              ? "No"
+                              : resultTokens.data?.sec! > 300
+                              ? "YES"
+                              : 300 - resultTokens.data?.sec! + " sec to go"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <button
                       onClick={onStakeTokens}
                       className="w-full sm:w-auto text-white text-sm font-bold duration-200 font-semibold px-8 py-3

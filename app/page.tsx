@@ -23,7 +23,12 @@ import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
 import { Contract, JsonRpcProvider } from "ethers";
 import { EmptyState } from "@/components/EmptyState";
-import { chainConfig, TOKEN_CONFIG, tokenDetails } from "./blockchain/config";
+import {
+  chainConfig,
+  TOKEN_CONFIG,
+  tokenDetails,
+  ZERODEV_PROJECT_ID,
+} from "./blockchain/config";
 import { Toaster, toast } from "sonner";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { GasEstimationModal } from "@/components/GasEstimationModal";
@@ -82,7 +87,6 @@ export default function Home({}: HomeProps) {
   if (isZeroDevConnector(connector)) {
     client = connector?.getAccountAbstractionProvider(params);
   }
-
   const { data: tokenHoldings } = useTokenHoldings(
     accountAddress as Address,
     gasToken
@@ -90,15 +94,34 @@ export default function Home({}: HomeProps) {
 
   const createSponsoredKernelClient = async () => {
     console.log("Creating sponsored kernel client");
+    const paymasterClient: any = createZeroDevPaymasterClient({
+      chain: CHAIN,
+      transport: http(
+        `https://rpc.zerodev.app/api/v3/${ZERODEV_PROJECT_ID}/chain/${CHAIN.id}?provider=GELATO&selfFunded=true`
+      ),
+    });
     const kernelClient = createKernelAccountClient({
       account: client.account,
       chain: CHAIN,
       bundlerTransport: http(
-        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc?sponsorApiKey=${GELATO_API_KEY}`
+        `https://api.staging.gelato.digital/bundlers/${CHAIN.id}/rpc`
       ),
+      paymaster: paymasterClient,
       userOperation: {
+        // Function to estimate gas fees dynamically from the bundler
         estimateFeesPerGas: async ({ bundlerClient }) => {
-          return getUserOperationGasPrice(bundlerClient);
+          const gasPrices =
+            await bundlerClient.request<EthGetUserOperationGasPriceRpc>({
+              method: "eth_getUserOperationGasPrice",
+              params: [],
+            });
+
+          console.log("Gas Prices:", gasPrices);
+
+          return {
+            maxFeePerGas: BigInt(gasPrices.maxFeePerGas),
+            maxPriorityFeePerGas: BigInt(gasPrices.maxPriorityFeePerGas),
+          };
         },
       },
     });
@@ -347,8 +370,6 @@ export default function Home({}: HomeProps) {
       ];
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
-        maxFeePerGas: BigInt(0),
-        maxPriorityFeePerGas: BigInt(0),
       });
 
       setUserOpHash(userOpHash);
@@ -420,8 +441,6 @@ export default function Home({}: HomeProps) {
 
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
-        maxFeePerGas: BigInt(0),
-        maxPriorityFeePerGas: BigInt(0),
       });
 
       setUserOpHash(userOpHash);

@@ -36,8 +36,9 @@ import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
 import { Address, Log } from "viem";
 import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
 import { useQuery } from "@tanstack/react-query";
-
 interface HomeProps {}
+
+// Gas configuration for Gelato Bundler
 type GasPrices = {
   maxFeePerGas: string;
   maxPriorityFeePerGas: string;
@@ -49,11 +50,8 @@ type EthGetUserOperationGasPriceRpc = {
 };
 
 let CHAIN = chainConfig;
-const CHAIN_ID = chainConfig.id;
-
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
 
-// Create a single provider instance outside the component
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
 
 // Create a memoized deployment check function
@@ -86,12 +84,10 @@ export default function Home({}: HomeProps) {
   const [loadingTokens, setLoadingTokens] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [showGasEstimation, setShowGasEstimation] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"drop" | "stake" | null>(
-    null
-  );
-  const [tokenBalance, setTokenBalance] = useState("0");
+  const [pendingAction, setPendingAction] = useState<"drop" | null>(null);
+  const [tokenBalance, setTokenBalance] = useState<any>("0");
 
-  const kernelVersion = KERNEL_V3_1;
+  // 7702 configuration
   const { primaryWallet, handleLogOut } = useDynamicContext();
   const connector: any = primaryWallet?.connector;
   const params = {
@@ -101,11 +97,11 @@ export default function Home({}: HomeProps) {
   if (isZeroDevConnector(connector)) {
     client = connector?.getAccountAbstractionProvider(params);
   }
+
   const { data: tokenHoldings } = useTokenHoldings(
     accountAddress as Address,
     gasToken
   );
-
   // Use React Query for deployment status
   const { data: isDeployed } = useQuery({
     queryKey: ["isDeployed", accountAddress],
@@ -129,6 +125,7 @@ export default function Home({}: HomeProps) {
         },
       },
     });
+
     setUser(kernelClient.account.address);
     setKernelAccount(kernelClient.account);
     setAccountAddress(kernelClient.account.address);
@@ -334,9 +331,7 @@ export default function Home({}: HomeProps) {
       );
       addLog(`Actual gas fees: ${actualFees}`);
       if (pendingAction === "drop") {
-        addLog(
-          "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
-        );
+        addLog("Tokens claimed successfully! Check the dashboard for updates");
         toast.success(
           "Tokens claimed successfully! Check the logs for details."
         );
@@ -409,88 +404,12 @@ export default function Home({}: HomeProps) {
       addLog(
         `Tokens claimed successfully! Transaction: ${chainConfig.blockExplorers.default.url}/tx/${txHash}`
       );
-      addLog(
-        "Your tokens will appear in the dashboard once the transaction is indexed (15-30 seconds)"
-      );
       toast.success("Tokens claimed successfully! Check the logs for details.");
     } catch (error: any) {
       console.log(error);
       toast.error(`Error claiming token. Check the logs`);
       addLog(
         `Error claiming tokens: ${
-          typeof error === "string"
-            ? error
-            : error?.message || "Unknown error occurred"
-        }`
-      );
-    } finally {
-      setLoadingTokens(false);
-    }
-  };
-
-  const stakeToken = async () => {
-    if (gasPaymentMethod === "erc20") {
-      setPendingAction("stake");
-      setShowGasEstimation(true);
-      return;
-    }
-
-    setLoadingTokens(true);
-    try {
-      const kernelClient = await createKernelClient(gasPaymentMethod);
-      const dropStakeContract = new Contract(
-        tokenDetails.address,
-        tokenDetails.abi,
-        provider
-      );
-      const tokens = +(
-        await dropStakeContract.balanceOf(kernelClient.account.address)
-      ).toString();
-      if (tokens == 0) {
-        toast.error("You don't have any tokens to stake");
-        return;
-      }
-
-      const calls = [
-        {
-          to: tokenDetails.address as `0x${string}`,
-          value: BigInt(0),
-          data: encodeFunctionData({
-            abi: tokenDetails.abi,
-            functionName: "stake",
-            args: [],
-          }),
-        },
-      ];
-
-      const userOpHash = await kernelClient.sendUserOperation({
-        callData: await kernelClient.account.encodeCalls(calls),
-        maxFeePerGas: BigInt(0),
-        maxPriorityFeePerGas: BigInt(0),
-      });
-      console.log(userOpHash);
-      addTaskStatusLog(userOpHash);
-      setUserOpHash(userOpHash);
-
-      const receipt = await kernelClient.waitForUserOperationReceipt({
-        hash: userOpHash,
-      });
-
-      const txHash = receipt.receipt.transactionHash;
-      console.log("User Operation Completed, Transaction Hash:", txHash);
-
-      checkIsDeployed(accountAddress);
-      addLog(
-        `Tokens staked successfully! Transaction: ${chainConfig.blockExplorers.default.url}/tx/${txHash}`
-      );
-      addLog(
-        "Now you will be able to sponsor all your transactions after 5 min"
-      );
-      toast.success("Tokens staked successfully! Check the logs for details.");
-    } catch (error: any) {
-      toast.error(`Error staking token. Check the logs`);
-      addLog(
-        `Error staking tokens: ${
           typeof error === "string"
             ? error
             : error?.message || "Unknown error occurred"
@@ -566,10 +485,6 @@ export default function Home({}: HomeProps) {
                   onClaimTokens={() => {
                     addLog("Claiming tokens...");
                     dropToken();
-                  }}
-                  onStakeTokens={() => {
-                    addLog("Staking tokens...");
-                    stakeToken();
                   }}
                   gasPaymentMethod={gasPaymentMethod}
                   onGasPaymentMethodChange={setGasPaymentMethod}

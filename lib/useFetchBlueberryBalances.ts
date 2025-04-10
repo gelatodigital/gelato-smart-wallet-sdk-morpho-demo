@@ -8,13 +8,11 @@ import { Contract, JsonRpcProvider } from "ethers";
 import { Address, parseAbi } from "viem";
 import { createPublicClient, http } from "viem";
 
-interface TokenHoldingsResponse {
-  tokens: number;
-  stakedTimeString: string;
-  sec: number;
-  usdcBalance: string;
-  wethBalance: string;
-}
+type TokenHoldingsResponse = {
+  tokens: bigint;
+  usdcBalance: bigint;
+  wethBalance: bigint;
+};
 
 // Create a single provider instance
 const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
@@ -39,21 +37,8 @@ export const useTokenHoldings = (
         provider
       );
 
-      // Batch the contract calls
-      const [tokens, stakedTimestamp] = await Promise.all([
-        droppStakeContract.balanceOf(address),
-        droppStakeContract.staked(address),
-      ]);
-
-      const stakedTimeMs = +stakedTimestamp.toString() * 1000;
-      const stakedTimeString =
-        stakedTimeMs === 0
-          ? "Not Staked"
-          : new Date(stakedTimeMs).toLocaleTimeString();
-
-      const now = Date.now();
-      const sec =
-        stakedTimeMs === 0 ? 0 : Math.floor((now - stakedTimeMs) / 1000);
+      // Get token balance
+      const tokens = await droppStakeContract.balanceOf(address);
 
       // Batch the balance checks
       const [usdcBalance, wethBalance] = await Promise.all([
@@ -76,17 +61,17 @@ export const useTokenHoldings = (
       ]);
 
       return {
-        tokens: +tokens.toString(),
-        stakedTimeString,
-        sec,
-        usdcBalance: (usdcBalance as bigint).toString(),
-        wethBalance: (wethBalance as bigint).toString(),
+        tokens,
+        usdcBalance,
+        wethBalance,
       };
     },
     enabled: !!address,
-    refetchInterval: 10000, // Increase to 10 seconds
-    refetchIntervalInBackground: true,
-    staleTime: 5000, // Consider data fresh for 5 seconds
-    gcTime: 1000 * 60 * 10, // Keep in cache for 10 minutes
+    refetchInterval: 3000, // Refetch every 3 seconds
+    refetchOnMount: true, // Refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchOnReconnect: true, // Refetch when network reconnects
+    staleTime: 0, // Consider data immediately stale
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 };

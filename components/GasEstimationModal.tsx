@@ -28,7 +28,7 @@ interface GasEstimationModalProps {
   kernelClient: any;
   gasToken: "USDC" | "WETH";
   tokenBalance: string;
-  pendingAction: "drop" | "stake";
+  pendingAction: "drop";
 }
 
 export function GasEstimationModal({
@@ -72,7 +72,7 @@ export function GasEstimationModal({
       // Encode the actual transaction data
       const data = encodeFunctionData({
         abi: tokenDetails.abi,
-        functionName: pendingAction === "drop" ? "drop" : "stake",
+        functionName: "drop",
         args: [],
       });
 
@@ -141,62 +141,44 @@ export function GasEstimationModal({
           </div>
 
           {/* Token Information Section */}
-          <div className="mt-4 space-y-3">
-            <div className="bg-zinc-900/50 rounded-lg p-4 space-y-2">
-              <h4 className="text-sm font-medium text-zinc-400">
-                Token Information
-              </h4>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-400">USDC Address:</span>
+          <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-zinc-400">Token Address:</span>
+                <a
+                  href={`${chainConfig.blockExplorers.default.url}/token/${TOKEN_CONFIG[gasToken].address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                >
+                  {TOKEN_CONFIG[gasToken].address.slice(0, 6)}...
+                  {TOKEN_CONFIG[gasToken].address.slice(-4)}
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+
+              <div className="pt-2">
+                {gasToken === "USDC" ? (
                   <a
-                    href={`${chainConfig.blockExplorers.default.url}/token/${TOKEN_CONFIG.USDC.address}`}
+                    href="https://faucet.circle.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                    className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
                   >
-                    {TOKEN_CONFIG.USDC.address.slice(0, 6)}...
-                    {TOKEN_CONFIG.USDC.address.slice(-4)}
+                    Get 10 USDC from Circle Faucet
                     <ExternalLink className="w-3 h-3" />
                   </a>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-zinc-400">WETH Address:</span>
+                ) : (
                   <a
-                    href={`${chainConfig.blockExplorers.default.url}/token/${TOKEN_CONFIG.WETH.address}`}
+                    href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                    className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
                   >
-                    {TOKEN_CONFIG.WETH.address.slice(0, 6)}...
-                    {TOKEN_CONFIG.WETH.address.slice(-4)}
+                    Mint {TOKEN_CONFIG[gasToken].symbol} for your smart account
                     <ExternalLink className="w-3 h-3" />
                   </a>
-                </div>
-                <div className="pt-2">
-                  {gasToken === "USDC" ? (
-                    <a
-                      href="https://faucet.circle.com/"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
-                    >
-                      Get 10 USDC from Circle Faucet
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  ) : (
-                    <a
-                      href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
-                    >
-                      Mint {TOKEN_CONFIG[gasToken].symbol} for your smart
-                      account
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  )}
-                </div>
+                )}
               </div>
             </div>
           </div>

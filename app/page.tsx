@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
-import Header from "@/components/Header";
-import TerminalLog from "@/components/TerminalLog";
+import Header from "../components/Header";
 import WalletCard from "@/components/WalletCard";
+import FeatureCards from "../components/FeatureCards";
+import ActivityLog from "../components/ActivityLog";
 import {
   createKernelAccountClient,
   getUserOperationGasPrice,
@@ -30,12 +31,15 @@ import {
   ZERODEV_PROJECT_ID,
 } from "./blockchain/config";
 import { Toaster, toast } from "sonner";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { useDynamicContext, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { GasEstimationModal } from "@/components/GasEstimationModal";
-import { useTokenHoldings } from "@/lib/useFetchBlueberryBalances";
+import { useTokenHoldings } from "@/lib/useFetchBalances";
 import { Address, Log } from "viem";
 import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
 import { useQuery } from "@tanstack/react-query";
+import { TransactionModal } from "@/components/TransactionModal";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { DynamicConnectButton } from "@dynamic-labs/sdk-react-core";
 interface HomeProps {}
 
 // Gas configuration for Gelato Bundler
@@ -71,7 +75,22 @@ export default function Home({}: HomeProps) {
   const [userOpHash, setUserOpHash] = useState("");
   const [kernelAccount, setKernelAccount] = useState<any>(null);
   const [kernelClient, setKernelClient] = useState<any>(null);
-  const [logs, setLogs] = useState<(string | JSX.Element)[]>([]);
+  const [logs, setLogs] = useState<
+    {
+      message: string | JSX.Element;
+      timestamp: string;
+      details?: {
+        userOpHash?: string;
+        txHash?: string;
+        gasDetails?: {
+          estimatedGas?: string;
+          actualGas?: string;
+          gasToken?: string;
+        };
+        isSponsored?: boolean;
+      };
+    }[]
+  >([]);
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
   const [gasPaymentMethod, setGasPaymentMethod] = useState<
     "sponsored" | "erc20"
@@ -86,6 +105,25 @@ export default function Home({}: HomeProps) {
   const [showGasEstimation, setShowGasEstimation] = useState(false);
   const [pendingAction, setPendingAction] = useState<"drop" | null>(null);
   const [tokenBalance, setTokenBalance] = useState<any>("0");
+  const [isCopied, setIsCopied] = useState(false);
+  const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
+  const [showTokenSelection, setShowTokenSelection] = useState(false);
+  const [estimatedGas, setEstimatedGas] = useState<string>("");
+
+  const [transactionDetails, setTransactionDetails] = useState<{
+    isOpen: boolean;
+    userOpHash?: string;
+    txHash?: string;
+    gasDetails?: {
+      estimatedGas: string;
+      actualGas: string;
+      gasToken: string;
+    };
+    isSponsored: boolean;
+  }>({
+    isOpen: false,
+    isSponsored: true,
+  });
 
   // 7702 configuration
   const { primaryWallet, handleLogOut } = useDynamicContext();
@@ -98,10 +136,8 @@ export default function Home({}: HomeProps) {
     client = connector?.getAccountAbstractionProvider(params);
   }
 
-  const { data: tokenHoldings } = useTokenHoldings(
-    accountAddress as Address,
-    gasToken
-  );
+  const { data: tokenHoldings, refetch: refetchTokenHoldings } =
+    useTokenHoldings(accountAddress as Address, gasToken);
   // Use React Query for deployment status
   const { data: isDeployed } = useQuery({
     queryKey: ["isDeployed", accountAddress],
@@ -112,7 +148,6 @@ export default function Home({}: HomeProps) {
   });
 
   const createSponsoredKernelClient = async () => {
-    console.log("Creating sponsored kernel client");
     const kernelClient = createKernelAccountClient({
       account: client.account,
       chain: CHAIN,
@@ -135,8 +170,7 @@ export default function Home({}: HomeProps) {
     return kernelClient;
   };
 
-  const createERC20KernelClient = async () => {
-    console.log("Creating ERC20 kernel client");
+  const createERC20KernelClient = async (gasToken: "USDC" | "WETH") => {
     const gasTokenAddress = TOKEN_CONFIG[gasToken].address;
 
     // Create a ZeroDev Paymaster client for gas sponsorship
@@ -201,9 +235,31 @@ export default function Home({}: HomeProps) {
     }
   };
 
-  const addLog = useCallback((message: string | JSX.Element) => {
-    setLogs((prevLogs) => [...prevLogs, message]);
-  }, []);
+  const addLog = useCallback(
+    (
+      message: string | JSX.Element,
+      details?: {
+        userOpHash?: string;
+        txHash?: string;
+        gasDetails?: {
+          estimatedGas?: string;
+          actualGas?: string;
+          gasToken?: string;
+        };
+        isSponsored?: boolean;
+      }
+    ) => {
+      setLogs((prevLogs) => [
+        ...prevLogs,
+        {
+          message,
+          timestamp: new Date().toISOString(),
+          details,
+        },
+      ]);
+    },
+    []
+  );
 
   const addTaskStatusLog = useCallback(
     (userOpHash: string) => {
@@ -229,7 +285,7 @@ export default function Home({}: HomeProps) {
     if (method === "sponsored") {
       return createSponsoredKernelClient();
     } else {
-      return createERC20KernelClient();
+      return createERC20KernelClient(gasToken);
     }
   };
 
@@ -274,8 +330,12 @@ export default function Home({}: HomeProps) {
   const handleGasEstimationConfirm = async (estimatedGas: string) => {
     setShowGasEstimation(false);
     setLoadingTokens(true);
+    setIsTransactionProcessing(true);
     try {
-      const kernelClient = await createKernelClient("erc20");
+      if (!kernelClient) {
+        throw new Error("Kernel client not initialized");
+      }
+
       let data = encodeFunctionData({
         abi: tokenDetails.abi,
         functionName: pendingAction === "drop" ? "drop" : "stake",
@@ -283,7 +343,6 @@ export default function Home({}: HomeProps) {
       });
 
       const calls = [
-        // Approve the paymaster to spend gas tokens
         await getERC20PaymasterApproveCall(kernelClient.paymaster, {
           gasToken: TOKEN_CONFIG[gasToken].address as `0x${string}`,
           approveAmount: parseEther("1"),
@@ -296,57 +355,54 @@ export default function Home({}: HomeProps) {
         },
       ];
 
-      // Add estimated gas to logs
-      addLog(`Estimated gas for transaction: ${estimatedGas}`);
-
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
       });
-      console.log(userOpHash);
-      addTaskStatusLog(userOpHash);
-
-      setUserOpHash(userOpHash);
+      // Add initial log with estimated gas
+      addLog(`Minting drop tokens - paying gas with ${gasToken}`, {
+        userOpHash,
+        gasDetails: {
+          estimatedGas,
+          gasToken,
+        },
+        isSponsored: false,
+      });
 
       const receipt = await kernelClient.waitForUserOperationReceipt({
         hash: userOpHash,
       });
-
       const txHash = receipt.receipt.transactionHash;
-      console.log("User Operation Completed, Transaction Hash:", txHash);
 
       // Get actual gas fees
-      const actualFees = await getActualFees(
+      const actualGas = await getActualFees(
         txHash,
         TOKEN_CONFIG[gasToken].address,
         gasToken
       );
 
-      checkIsDeployed(accountAddress);
-      addLog(
-        `Tokens ${
-          pendingAction === "drop" ? "claimed" : "staked"
-        } successfully! Transaction: ${
-          chainConfig.blockExplorers.default.url
-        }/tx/${txHash}`
+      // Add completion log with all details
+      addLog("Transaction completed successfully", {
+        userOpHash,
+        txHash,
+        gasDetails: {
+          estimatedGas,
+          actualGas,
+          gasToken,
+        },
+        isSponsored: false,
+      });
+
+      toast.success(
+        `${
+          pendingAction === "drop" ? "Tokens claimed" : "Tokens staked"
+        } successfully!`
       );
-      addLog(`Actual gas fees: ${actualFees}`);
-      if (pendingAction === "drop") {
-        addLog("Tokens claimed successfully! Check the dashboard for updates");
-        toast.success(
-          "Tokens claimed successfully! Check the logs for details."
-        );
-      } else {
-        addLog("Tokens staked successfully, Check the dashboard for updates");
-        toast.success(
-          "Tokens staked successfully! Check the logs for details."
-        );
+
+      // Refresh token holdings after successful transaction
+      if (accountAddress) {
+        refetchTokenHoldings();
       }
     } catch (error: any) {
-      toast.error(
-        `Error ${
-          pendingAction === "drop" ? "claiming" : "staking"
-        } token. Check the logs`
-      );
       addLog(
         `Error ${pendingAction === "drop" ? "claiming" : "staking"} tokens: ${
           typeof error === "string"
@@ -354,8 +410,14 @@ export default function Home({}: HomeProps) {
             : error?.message || "Unknown error occurred"
         }`
       );
+      toast.error(
+        `Error ${
+          pendingAction === "drop" ? "claiming" : "staking"
+        } token. Check the logs`
+      );
     } finally {
       setLoadingTokens(false);
+      setIsTransactionProcessing(false);
       setPendingAction(null);
     }
   };
@@ -368,6 +430,7 @@ export default function Home({}: HomeProps) {
     }
 
     setLoadingTokens(true);
+    setIsTransactionProcessing(true);
     try {
       const kernelClient = await createKernelClient(gasPaymentMethod);
       let data = encodeFunctionData({
@@ -388,26 +451,49 @@ export default function Home({}: HomeProps) {
         maxFeePerGas: BigInt(0),
         maxPriorityFeePerGas: BigInt(0),
       });
-      console.log(userOpHash);
-      addTaskStatusLog(userOpHash);
 
-      setUserOpHash(userOpHash);
+      addLog(
+        gasPaymentMethod === "sponsored"
+          ? "Minting drop tokens - Sponsored"
+          : `Minting drop tokens - paid gas with ${gasToken}`,
+        {
+          userOpHash,
+          isSponsored: gasPaymentMethod === "sponsored",
+        }
+      );
 
-      const receipt = await kernelClient.waitForUserOperationReceipt({
-        hash: userOpHash,
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const txHash = await Promise.race([
+        // First promise: Get hash from task status
+        getTaskStatus(userOpHash).then((taskStatus) => {
+          return taskStatus.task.transactionHash;
+        }),
+        // Second promise: Get hash from kernel client
+        kernelClient
+          .waitForUserOperationReceipt({
+            hash: userOpHash,
+          })
+          .then((receipt: { receipt: { transactionHash: string } }) => {
+            return receipt.receipt.transactionHash;
+          }),
+      ]);
+
+      // Add success log
+      addLog("Transaction completed successfully", {
+        userOpHash,
+        txHash,
+        isSponsored: gasPaymentMethod === "sponsored",
       });
 
-      const txHash = receipt.receipt.transactionHash;
-      console.log("User Operation Completed, Transaction Hash:", txHash);
+      toast.success("Tokens claimed successfully!");
 
-      checkIsDeployed(accountAddress);
-      addLog(
-        `Tokens claimed successfully! Transaction: ${chainConfig.blockExplorers.default.url}/tx/${txHash}`
-      );
-      toast.success("Tokens claimed successfully! Check the logs for details.");
+      // Refresh token holdings after successful transaction
+      if (accountAddress) {
+        refetchTokenHoldings();
+      }
     } catch (error: any) {
       console.log(error);
-      toast.error(`Error claiming token. Check the logs`);
       addLog(
         `Error claiming tokens: ${
           typeof error === "string"
@@ -415,10 +501,22 @@ export default function Home({}: HomeProps) {
             : error?.message || "Unknown error occurred"
         }`
       );
+      toast.error(`Error claiming token. Check the logs`);
     } finally {
       setLoadingTokens(false);
+      setIsTransactionProcessing(false);
     }
   };
+  async function getTaskStatus(userOpHash: string) {
+    const url = `https://relay.gelato.digital/tasks/status/${userOpHash}`;
+    const response = await fetch(url);
+    return response.json();
+  }
+  const handleCopy = useCallback(() => {
+    navigator.clipboard.writeText(accountAddress);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+  }, [accountAddress]);
 
   useEffect(() => {
     async function createAccount() {
@@ -452,6 +550,16 @@ export default function Home({}: HomeProps) {
     }
   }, [tokenHoldings, gasToken]);
 
+  const handleShowTransactionDetails = useCallback((details: any) => {
+    setTransactionDetails({
+      isOpen: true,
+      userOpHash: details.userOpHash,
+      txHash: details.txHash,
+      gasDetails: details.gasDetails,
+      isSponsored: details.isSponsored,
+    });
+  }, []);
+
   return (
     <ThemeProvider
       attribute="class"
@@ -460,61 +568,288 @@ export default function Home({}: HomeProps) {
       disableTransitionOnChange
     >
       <div className="min-h-screen bg-black text-white">
-        <div className="relative min-h-screen pb-0">
-          <Header
-            isLoggedIn={!!user}
-            addLog={addLog}
-            walletAddress={accountAddress}
-            handleLogout={logout}
-          />
-          <div className="flex-1 w-full h-full flex flex-col items-center py-4">
-            {isInitializing && (
-              <div className="flex flex-col items-center justify-center mt-20">
-                <div className="w-8 h-8 border-4 border-t-blue-500 border-r-transparent border-b-blue-500 border-l-transparent rounded-full animate-spin"></div>
-                <p className="mt-4 text-gray-400">Initializing wallet...</p>
-              </div>
-            )}
-            {!isInitializing && !user && <EmptyState />}
-            {!isInitializing && !!user && (
-              <>
-                <br />
-                <UserProfile address={accountAddress} isDeployed={isDeployed} />
-                <WalletCard
-                  isLoading={loadingTokens}
-                  address={accountAddress}
-                  onClaimTokens={() => {
-                    addLog("Claiming tokens...");
-                    dropToken();
-                  }}
-                  gasPaymentMethod={gasPaymentMethod}
-                  onGasPaymentMethodChange={setGasPaymentMethod}
-                  gasToken={gasToken}
-                  onGasTokenChange={setGasToken}
-                />
-              </>
-            )}
-          </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Header />
 
-          <TerminalLog
-            logs={logs}
-            isOpen={isTerminalOpen}
-            setIsOpen={setIsTerminalOpen}
-          />
+          <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <FeatureCards />
+
+            <div className="lg:col-span-2 space-y-8">
+              {isInitializing ? (
+                <div className="p-8 bg-zinc-900 rounded-xl text-center">
+                  <LoadingSpinner />
+                </div>
+              ) : !user ? (
+                <div className="w-full flex flex-col p-4 bg-[#202020] border rounded-[12px] border-[#2A2A2A]">
+                  <div className="flex flex-col items-center justify-center">
+                    <DynamicConnectButton>
+                      <div className="w-32 py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative">
+                        Login
+                      </div>
+                    </DynamicConnectButton>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Loading Overlay */}
+                  {isTransactionProcessing && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+                      <div className="bg-zinc-900 p-8 rounded-xl shadow-xl flex flex-col items-center gap-4">
+                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-lg font-medium">
+                          Processing Transaction...
+                        </p>
+                        <p className="text-zinc-400 text-sm">
+                          Please wait while we confirm your transaction
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="w-full flex flex-col p-4 bg-[#161616] border rounded-[12px] border-[#2A2A2A]">
+                    <div className="space-y-4">
+                      {/* Wallet Card with Logout */}
+                      <WalletCard
+                        accountAddress={accountAddress}
+                        gasToken={gasToken}
+                        handleLogout={logout}
+                      />
+
+                      <div className="w-full flex flex-col p-4 bg-[#202020] border rounded-[12px] border-[#2A2A2A]">
+                        <div className="w-full flex items-center mb-4">
+                          <div className="flex-shrink-0 w-10 h-10 bg-[#252525] rounded flex items-center justify-center">
+                            <svg
+                              className="w-5 h-5 text-[#807872]"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                            </svg>
+                          </div>
+                          <h3 className="text-text-title text-md font-medium break-words ps-2">
+                            Gas sponsorship
+                          </h3>
+                        </div>
+                        <p className="text-text-tertiary text-sm flex-grow break-words mb-4">
+                          Sponsor transactions effortlessly and deliver a
+                          frictionless user experience.
+                        </p>
+                        <div className="w-full mt-auto">
+                          <button
+                            onClick={() => {
+                              dropToken();
+                            }}
+                            disabled={loadingTokens || isTransactionProcessing}
+                            className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
+                          >
+                            {isTransactionProcessing ? (
+                              <div className="flex items-center justify-center">
+                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                <span>Processing Transaction...</span>
+                              </div>
+                            ) : loadingTokens ? (
+                              "Minting..."
+                            ) : (
+                              "Mint Drop Tokens"
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="w-full flex flex-col p-4 bg-[#202020] border rounded-[12px] border-[#2A2A2A]">
+                        <div className="w-full flex items-center mb-4">
+                          <div className="flex-shrink-0 w-10 h-10 bg-[#252525] rounded flex items-center justify-center">
+                            <svg
+                              className="w-5 h-5 text-[#807872]"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M12 6v12M6 12h12" />
+                            </svg>
+                          </div>
+                          <h3 className="text-text-title text-md font-medium break-words ps-2">
+                            ERC-20
+                          </h3>
+                        </div>
+                        <p className="text-text-tertiary text-sm flex-grow break-words mb-4">
+                          Allow your users to pay for transaction gas fees with
+                          ERC-20 tokens.
+                        </p>
+                        <div className="w-full mt-auto">
+                          {!showTokenSelection ? (
+                            <button
+                              onClick={() => setShowTokenSelection(true)}
+                              disabled={
+                                loadingTokens || isTransactionProcessing
+                              }
+                              className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Mint Drop Tokens
+                            </button>
+                          ) : (
+                            <div className="space-y-4">
+                              <button
+                                onClick={async () => {
+                                  setGasToken("USDC");
+                                  setPendingAction("drop");
+                                  try {
+                                    // Create a new kernel client with USDC configuration
+                                    const kernelClient =
+                                      await createERC20KernelClient("USDC");
+                                    setKernelClient(kernelClient);
+                                    setShowGasEstimation(true);
+                                    setShowTokenSelection(false);
+                                  } catch (error) {
+                                    console.error(
+                                      "Error creating USDC kernel client:",
+                                      error
+                                    );
+                                    toast.error(
+                                      "Failed to initialize USDC kernel client"
+                                    );
+                                  }
+                                }}
+                                disabled={
+                                  loadingTokens || isTransactionProcessing
+                                }
+                                className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                                  <span className="text-green-500">$</span>
+                                </div>
+                                Use USDC
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setGasToken("WETH");
+                                  setPendingAction("drop");
+                                  try {
+                                    // Create a new kernel client with WETH configuration
+                                    const kernelClient =
+                                      await createERC20KernelClient("WETH");
+                                    setKernelClient(kernelClient);
+                                    setShowGasEstimation(true);
+                                    setShowTokenSelection(false);
+                                  } catch (error) {
+                                    console.error(
+                                      "Error creating WETH kernel client:",
+                                      error
+                                    );
+                                    toast.error(
+                                      "Failed to initialize WETH kernel client"
+                                    );
+                                  }
+                                }}
+                                disabled={
+                                  loadingTokens || isTransactionProcessing
+                                }
+                                className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
+                                  <span className="text-blue-500">W</span>
+                                </div>
+                                Use WETH
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowTokenSelection(false);
+                                  // Refresh token holdings when canceling token selection
+                                  if (accountAddress) {
+                                    refetchTokenHoldings();
+                                  }
+                                }}
+                                className="w-full py-2 text-zinc-400 hover:text-zinc-300 transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Activity Log */}
+                  <ActivityLog
+                    logs={logs}
+                    onShowDetails={handleShowTransactionDetails}
+                  />
+                </>
+              )}
+            </div>
+          </div>
         </div>
+
+        {/* Footer */}
+        <footer className="border-t border-zinc-800 mt-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center text-sm text-zinc-400">
+            <div className="flex items-center gap-2">
+              <span>Built by Gelato</span>
+              <span>•</span>
+              <span>
+                Powered by{" "}
+                <a
+                  href="https://eips.ethereum.org/EIPS/eip-7702"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300"
+                >
+                  EIP7702
+                </a>
+              </span>
+            </div>
+            <div className="flex items-center gap-6">
+              <a
+                href="https://docs.gelato.network"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-zinc-300 transition-colors"
+              >
+                Documentation
+              </a>
+              <a
+                href="https://github.com/gelatodigital/eip7702-monorepo"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-zinc-300 transition-colors"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
+        </footer>
+
         <GasEstimationModal
           isOpen={showGasEstimation}
-          onClose={() => {
-            setShowGasEstimation(false);
-            setPendingAction(null);
-          }}
+          onClose={() => setShowGasEstimation(false)}
           onConfirm={handleGasEstimationConfirm}
           kernelClient={kernelClient}
           gasToken={gasToken}
           tokenBalance={tokenBalance}
           pendingAction={pendingAction!}
         />
+
+        <TransactionModal
+          isOpen={transactionDetails.isOpen}
+          onClose={() =>
+            setTransactionDetails((prev) => ({ ...prev, isOpen: false }))
+          }
+          userOpHash={transactionDetails.userOpHash}
+          txHash={transactionDetails.txHash}
+          gasDetails={transactionDetails.gasDetails}
+          isSponsored={transactionDetails.isSponsored}
+        />
+
+        <Toaster richColors />
       </div>
-      <Toaster richColors />
     </ThemeProvider>
   );
 }

@@ -117,23 +117,18 @@ export function GasEstimationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-800">
         <DialogHeader>
-          <DialogTitle>Gas Fee Estimation</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg font-semibold">
+            Gas Fee Estimation
+          </DialogTitle>
+          <DialogDescription className="text-zinc-400">
             This will estimate the gas fees for your {pendingAction} transaction
             in {TOKEN_CONFIG[gasToken].symbol}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium">Your Balance:</span>
-            <span className="text-sm">
-              {formatBalance(tokenBalance, TOKEN_CONFIG[gasToken].decimals)}{" "}
-              {TOKEN_CONFIG[gasToken].symbol}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center p-3 bg-zinc-800 rounded-lg">
             <span className="text-sm font-medium">Estimated Gas:</span>
             <span className="text-sm">
               {isEstimating ? "Estimating..." : estimatedGas}
@@ -141,15 +136,15 @@ export function GasEstimationModal({
           </div>
 
           {/* Token Information Section */}
-          <div className="bg-zinc-900/50 rounded-xl p-4 border border-zinc-800">
-            <div className="space-y-2">
+          <div className="bg-zinc-800 rounded-lg p-4">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-zinc-400">Token Address:</span>
                 <a
                   href={`${chainConfig.blockExplorers.default.url}/token/${TOKEN_CONFIG[gasToken].address}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                  className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
                 >
                   {TOKEN_CONFIG[gasToken].address.slice(0, 6)}...
                   {TOKEN_CONFIG[gasToken].address.slice(-4)}
@@ -163,7 +158,7 @@ export function GasEstimationModal({
                     href="https://faucet.circle.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                    className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
                   >
                     Get 10 USDC from Circle Faucet
                     <ExternalLink className="w-3 h-3" />
@@ -173,7 +168,7 @@ export function GasEstimationModal({
                     href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm text-[#00AEFA] hover:text-[#1093CD] flex items-center gap-1"
+                    className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
                   >
                     Mint {TOKEN_CONFIG[gasToken].symbol} for your smart account
                     <ExternalLink className="w-3 h-3" />
@@ -194,26 +189,38 @@ export function GasEstimationModal({
           <Button
             onClick={estimateGasFee}
             disabled={isEstimating}
-            className="text-white text-sm font-bold duration-200 font-semibold px-8 py-3
-              rounded-xl bg-gradient-to-r from-[#00AEFA] to-[#00AEFA]
-              hover:from-[#1093CD] hover:to-[#00CECB]
-              transform transition-all hover:scale-[1.02]
-              shadow-lg hover:shadow-[#00AEFA]/25
-              disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {isEstimating ? "Estimating..." : "Estimate Gas"}
+            {isEstimating ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Estimating...</span>
+              </>
+            ) : (
+              <>
+                <span>Estimate Gas</span>
+              </>
+            )}
           </Button>
           <Button
             onClick={() => onConfirm(estimatedGas)}
             disabled={!estimatedGas || isEstimating}
-            className="text-white text-sm font-bold duration-200 font-semibold px-8 py-3
-              rounded-xl bg-gradient-to-r from-[#00AEFA] to-[#00AEFA]
-              hover:from-[#1093CD] hover:to-[#00CECB]
-              transform transition-all hover:scale-[1.02]
-              shadow-lg hover:shadow-[#00AEFA]/25
-              disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-purple-500/20"
           >
-            Confirm
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Confirm</span>
           </Button>
         </DialogFooter>
       </DialogContent>

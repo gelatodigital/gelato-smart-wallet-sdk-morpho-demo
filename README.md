@@ -28,7 +28,7 @@ cd eip7702-next-demo
 2. Checkout to 7702 Branch:
 
 ```bash
-git checkout dynamic7702-zerodev
+git checkout gelato-7702
 ```
 
 3. Install dependencies:

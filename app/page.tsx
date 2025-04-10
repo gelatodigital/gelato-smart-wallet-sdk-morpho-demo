@@ -40,6 +40,8 @@ import { useQuery } from "@tanstack/react-query";
 import { TransactionModal } from "@/components/TransactionModal";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { DynamicConnectButton } from "@dynamic-labs/sdk-react-core";
+import Image from "next/image";
+
 interface HomeProps {}
 
 // Gas configuration for Gelato Bundler
@@ -723,8 +725,14 @@ export default function Home({}: HomeProps) {
                                 }
                                 className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                               >
-                                <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
-                                  <span className="text-green-500">$</span>
+                                <div className="w-6 h-6 bg-[#2775CA]/10 rounded-full flex items-center justify-center">
+                                  <Image
+                                    src="/usdc.svg"
+                                    alt="USDC"
+                                    width={16}
+                                    height={16}
+                                    className="w-4 h-4"
+                                  />
                                 </div>
                                 Use USDC
                               </button>
@@ -754,8 +762,14 @@ export default function Home({}: HomeProps) {
                                 }
                                 className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                               >
-                                <div className="w-6 h-6 bg-blue-500/20 rounded-full flex items-center justify-center">
-                                  <span className="text-blue-500">W</span>
+                                <div className="w-6 h-6 bg-[#627EEA]/10 rounded-full flex items-center justify-center">
+                                  <Image
+                                    src="/weth.svg"
+                                    alt="WETH"
+                                    width={16}
+                                    height={16}
+                                    className="w-4 h-4"
+                                  />
                                 </div>
                                 Use WETH
                               </button>

@@ -21,10 +21,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           EthereumWalletConnectors,
           ZeroDevSmartWalletConnectors,
         ],
-        events: {
-          onAuthFlowOpen: () => console.log("Auth flow opened"),
-          onAuthSuccess: () => console.log("Auth success"),
-        },
       }}
     >
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

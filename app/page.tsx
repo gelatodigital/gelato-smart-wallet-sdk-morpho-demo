@@ -816,7 +816,7 @@ export default function Home({}: HomeProps) {
                 Documentation
               </a>
               <a
-                href="https://github.com/gelatodigital/eip7702-monorepo"
+                href="https://github.com/gelatodigital/eip7702-next-demo/tree/gelato-7702"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-zinc-300 transition-colors"

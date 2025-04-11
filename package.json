@@ -31,6 +31,7 @@
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "encoding": "^0.1.13",
     "ethers": "^6.13.4",
     "lucide-react": "^0.465.0",

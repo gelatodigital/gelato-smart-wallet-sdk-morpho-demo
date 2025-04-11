@@ -361,14 +361,17 @@ export default function Home({}: HomeProps) {
         callData: await kernelClient.account.encodeCalls(calls),
       });
       // Add initial log with estimated gas
-      addLog(`Minting drop tokens - paying gas with ${gasToken}`, {
-        userOpHash,
-        gasDetails: {
-          estimatedGas,
-          gasToken,
-        },
-        isSponsored: false,
-      });
+      addLog(
+        `Sending userOp through Gelato Bundler - paying gas with ${gasToken}`,
+        {
+          userOpHash,
+          gasDetails: {
+            estimatedGas,
+            gasToken,
+          },
+          isSponsored: false,
+        }
+      );
 
       const receipt = await kernelClient.waitForUserOperationReceipt({
         hash: userOpHash,
@@ -383,7 +386,7 @@ export default function Home({}: HomeProps) {
       );
 
       // Add completion log with all details
-      addLog("Transaction completed successfully", {
+      addLog("Minted drop tokens on chain successfully", {
         userOpHash,
         txHash,
         gasDetails: {
@@ -456,8 +459,8 @@ export default function Home({}: HomeProps) {
 
       addLog(
         gasPaymentMethod === "sponsored"
-          ? "Minting drop tokens - Sponsored"
-          : `Minting drop tokens - paid gas with ${gasToken}`,
+          ? "Sending userOp through Gelato Bundler - Sponsored"
+          : `Sending UserOp through Gelato Bundler - paying gas with ${gasToken}`,
         {
           userOpHash,
           isSponsored: gasPaymentMethod === "sponsored",
@@ -482,7 +485,7 @@ export default function Home({}: HomeProps) {
       ]);
 
       // Add success log
-      addLog("Transaction completed successfully", {
+      addLog("Minted drop tokens on chain successfully", {
         userOpHash,
         txHash,
         isSponsored: gasPaymentMethod === "sponsored",
@@ -593,17 +596,21 @@ export default function Home({}: HomeProps) {
                 </div>
               ) : (
                 <>
-                  {/* Loading Overlay */}
+                  {/* Professional Transaction Processing Modal */}
                   {isTransactionProcessing && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                      <div className="bg-zinc-900 p-8 rounded-xl shadow-xl flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                        <p className="text-lg font-medium">
-                          Processing Transaction...
-                        </p>
-                        <p className="text-zinc-400 text-sm">
-                          Please wait while we confirm your transaction
-                        </p>
+                    <div className="fixed top-4 right-4 z-50">
+                      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl w-80">
+                        <div className="p-4 flex items-center gap-4">
+                          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                          <div>
+                            <p className="text-sm font-medium text-blue-400">
+                              Processing Transaction
+                            </p>
+                            <p className="text-xs text-zinc-400">
+                              Please wait while we confirm your transaction
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -650,7 +657,7 @@ export default function Home({}: HomeProps) {
                           >
                             {isTransactionProcessing ? (
                               <div className="flex items-center justify-center">
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                                 <span>Processing Transaction...</span>
                               </div>
                             ) : loadingTokens ? (

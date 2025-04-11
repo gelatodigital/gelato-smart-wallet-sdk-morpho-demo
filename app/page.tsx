@@ -573,6 +573,25 @@ export default function Home({}: HomeProps) {
       disableTransitionOnChange
     >
       <div className="min-h-screen bg-black text-white">
+        {/* Transaction Processing Modal - Moved outside the main content flow */}
+        {isTransactionProcessing && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl w-80">
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                <div>
+                  <p className="text-sm font-medium text-blue-400">
+                    Processing Transaction
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    Please wait while we confirm your transaction
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Header />
 
@@ -596,25 +615,6 @@ export default function Home({}: HomeProps) {
                 </div>
               ) : (
                 <>
-                  {/* Professional Transaction Processing Modal */}
-                  {isTransactionProcessing && (
-                    <div className="fixed top-4 right-4 z-50">
-                      <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl w-80">
-                        <div className="p-4 flex items-center gap-4">
-                          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
-                          <div>
-                            <p className="text-sm font-medium text-blue-400">
-                              Processing Transaction
-                            </p>
-                            <p className="text-xs text-zinc-400">
-                              Please wait while we confirm your transaction
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   <div className="w-full flex flex-col p-4 bg-[#161616] border rounded-[12px] border-[#2A2A2A]">
                     <div className="space-y-4">
                       {/* Wallet Card with Logout */}
@@ -650,17 +650,20 @@ export default function Home({}: HomeProps) {
                         <div className="w-full mt-auto">
                           <button
                             onClick={() => {
+                              setGasPaymentMethod("sponsored");
                               dropToken();
                             }}
                             disabled={loadingTokens || isTransactionProcessing}
                             className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
                           >
-                            {isTransactionProcessing ? (
+                            {isTransactionProcessing &&
+                            gasPaymentMethod === "sponsored" ? (
                               <div className="flex items-center justify-center">
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                                 <span>Processing Transaction...</span>
                               </div>
-                            ) : loadingTokens ? (
+                            ) : loadingTokens &&
+                              gasPaymentMethod === "sponsored" ? (
                               "Minting..."
                             ) : (
                               "Mint Drop Tokens"
@@ -702,13 +705,25 @@ export default function Home({}: HomeProps) {
                               }
                               className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Mint Drop Tokens
+                              {isTransactionProcessing &&
+                              gasPaymentMethod === "erc20" ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                  <span>Processing Transaction...</span>
+                                </div>
+                              ) : loadingTokens &&
+                                gasPaymentMethod === "erc20" ? (
+                                "Minting..."
+                              ) : (
+                                "Mint Drop Tokens"
+                              )}
                             </button>
                           ) : (
                             <div className="space-y-4">
                               <button
                                 onClick={async () => {
                                   setGasToken("USDC");
+                                  setGasPaymentMethod("erc20");
                                   setPendingAction("drop");
                                   try {
                                     // Create a new kernel client with USDC configuration
@@ -732,20 +747,31 @@ export default function Home({}: HomeProps) {
                                 }
                                 className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                               >
-                                <div className="w-6 h-6 bg-[#2775CA]/10 rounded-full flex items-center justify-center">
-                                  <Image
-                                    src="/usdc.svg"
-                                    alt="USDC"
-                                    width={16}
-                                    height={16}
-                                    className="w-4 h-4"
-                                  />
-                                </div>
-                                Use USDC
+                                {isTransactionProcessing &&
+                                gasPaymentMethod === "erc20" ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                    <span>Processing Transaction...</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="w-6 h-6 bg-[#2775CA]/10 rounded-full flex items-center justify-center">
+                                      <Image
+                                        src="/usdc.svg"
+                                        alt="USDC"
+                                        width={16}
+                                        height={16}
+                                        className="w-4 h-4"
+                                      />
+                                    </div>
+                                    Use USDC
+                                  </>
+                                )}
                               </button>
                               <button
                                 onClick={async () => {
                                   setGasToken("WETH");
+                                  setGasPaymentMethod("erc20");
                                   setPendingAction("drop");
                                   try {
                                     // Create a new kernel client with WETH configuration
@@ -769,16 +795,26 @@ export default function Home({}: HomeProps) {
                                 }
                                 className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                               >
-                                <div className="w-6 h-6 bg-[#627EEA]/10 rounded-full flex items-center justify-center">
-                                  <Image
-                                    src="/weth.svg"
-                                    alt="WETH"
-                                    width={16}
-                                    height={16}
-                                    className="w-4 h-4"
-                                  />
-                                </div>
-                                Use WETH
+                                {isTransactionProcessing &&
+                                gasPaymentMethod === "erc20" ? (
+                                  <div className="flex items-center justify-center">
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                    <span>Processing Transaction...</span>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="w-6 h-6 bg-[#627EEA]/10 rounded-full flex items-center justify-center">
+                                      <Image
+                                        src="/weth.svg"
+                                        alt="WETH"
+                                        width={16}
+                                        height={16}
+                                        className="w-4 h-4"
+                                      />
+                                    </div>
+                                    Use WETH
+                                  </>
+                                )}
                               </button>
                               <button
                                 onClick={() => {

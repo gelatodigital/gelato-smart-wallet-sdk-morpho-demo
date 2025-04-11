@@ -24,12 +24,7 @@ import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
 import { Contract, JsonRpcProvider } from "ethers";
 import { EmptyState } from "@/components/EmptyState";
-import {
-  chainConfig,
-  TOKEN_CONFIG,
-  tokenDetails,
-  ZERODEV_PROJECT_ID,
-} from "./blockchain/config";
+import { chainConfig, TOKEN_CONFIG, tokenDetails } from "./blockchain/config";
 import { Toaster, toast } from "sonner";
 import { useDynamicContext, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { GasEstimationModal } from "@/components/GasEstimationModal";
@@ -886,7 +881,10 @@ export default function Home({}: HomeProps) {
 
         <GasEstimationModal
           isOpen={showGasEstimation}
-          onClose={() => setShowGasEstimation(false)}
+          onClose={() => {
+            setShowGasEstimation(false);
+            setGasPaymentMethod("sponsored");
+          }}
           onConfirm={handleGasEstimationConfirm}
           kernelClient={kernelClient}
           gasToken={gasToken}

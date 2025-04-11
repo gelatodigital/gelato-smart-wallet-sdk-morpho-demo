@@ -38,28 +38,17 @@ yarn install
 ```
 
 4. Set up environment variables:
+
    - Copy `.env.local.example` to `.env.local`
-   - Fill in the required environment variables:
+   - Fill in the required environment variables
+
+Note:- Currently the demo is configured to ethereum sepolia
 
 ```env
+NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id
+NEXT_PUBLIC_ZERODEV_PROJECT_ID=your-zerodev-project-id
 NEXT_PUBLIC_GELATO_API_KEY="your-gelato-api-key"
 NEXT_PUBLIC_RPC_URL="your-rpc-url"
-```
-
-5. Configure Dynamic Environment ID:
-   - Open `app/providers.tsx`
-   - Replace the `environmentId` with your Dynamic project ID:
-
-```typescript
-environmentId: "your-dynamic-environment-id";
-```
-
-6. Configure ZeroDev Project ID:
-   - Open `app/blockchain/config.ts`
-   - Update the ZeroDev project ID with your own:
-
-```typescript
-ZERODEV_PROJECT_ID: "your-zerodev-project-id";
 ```
 
 ## Development

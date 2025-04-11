@@ -46,7 +46,7 @@ export const chainConfig = sepolia;
 export const usdcAddress = "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
 export const wethAddress = "0x2335b1CDB8E52E2780acC8b94c90Fed6dB9FF301";
 
-export const ZERODEV_PROJECT_ID = ""; // Project Id for Sepolia Testnet
+const ZERODEV_PROJECT_ID = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID as string;
 
 export const TOKEN_CONFIG = {
   USDC: {

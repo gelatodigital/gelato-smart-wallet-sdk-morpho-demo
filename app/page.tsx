@@ -567,11 +567,11 @@ export default function Home({}: HomeProps) {
       enableSystem={false}
       disableTransitionOnChange
     >
-      <div className="min-h-screen bg-black text-white">
+      <div className="min-h-screen bg-[#080808] text-white">
         {/* Transaction Processing Modal - Moved outside the main content flow */}
         {isTransactionProcessing && (
           <div className="fixed top-4 right-4 z-50">
-            <div className="bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl w-80">
+            <div className="bg-[#202020] border border-[#2A2A2A] rounded-[12px] shadow-xl w-80">
               <div className="p-4 flex items-center gap-4">
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
                 <div>
@@ -587,22 +587,24 @@ export default function Home({}: HomeProps) {
           </div>
         )}
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-[980px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Header />
 
           <div className="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <FeatureCards />
+            <div className="lg:col-span-1 space-y-4">
+              <FeatureCards />
+            </div>
 
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2 space-y-4">
               {isInitializing ? (
-                <div className="p-8 bg-zinc-900 rounded-xl text-center">
+                <div className="p-8 bg-[#161616] border border-[#2A2A2A] rounded-[12px] text-center">
                   <LoadingSpinner />
                 </div>
               ) : !user ? (
-                <div className="w-full flex flex-col p-4 bg-[#202020] border rounded-[12px] border-[#2A2A2A]">
+                <div className="w-full flex flex-col p-4 bg-[#161616] border rounded-[12px] border-[#2A2A2A]">
                   <div className="flex flex-col items-center justify-center">
                     <DynamicConnectButton>
-                      <div className="w-32 py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative">
+                      <div className="w-32 py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative text-center text-sm text-white">
                         Login
                       </div>
                     </DynamicConnectButton>
@@ -634,11 +636,11 @@ export default function Home({}: HomeProps) {
                               <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
                             </svg>
                           </div>
-                          <h3 className="text-text-title text-md font-medium break-words ps-2">
+                          <h3 className="text-white text-md font-medium break-words ps-2">
                             Gas sponsorship
                           </h3>
                         </div>
-                        <p className="text-text-tertiary text-sm flex-grow break-words mb-4">
+                        <p className="text-zinc-400 text-sm flex-grow break-words mb-4">
                           Sponsor transactions effortlessly and deliver a
                           frictionless user experience.
                         </p>
@@ -649,7 +651,7 @@ export default function Home({}: HomeProps) {
                               dropToken();
                             }}
                             disabled={loadingTokens || isTransactionProcessing}
-                            className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
+                            className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative text-sm text-white"
                           >
                             {isTransactionProcessing &&
                             gasPaymentMethod === "sponsored" ? (
@@ -683,11 +685,11 @@ export default function Home({}: HomeProps) {
                               <path d="M12 6v12M6 12h12" />
                             </svg>
                           </div>
-                          <h3 className="text-text-title text-md font-medium break-words ps-2">
+                          <h3 className="text-white text-md font-medium break-words ps-2">
                             ERC-20
                           </h3>
                         </div>
-                        <p className="text-text-tertiary text-sm flex-grow break-words mb-4">
+                        <p className="text-zinc-400 text-sm flex-grow break-words mb-4">
                           Allow your users to pay for transaction gas fees with
                           ERC-20 tokens.
                         </p>
@@ -698,7 +700,7 @@ export default function Home({}: HomeProps) {
                               disabled={
                                 loadingTokens || isTransactionProcessing
                               }
-                              className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm text-white"
                             >
                               {isTransactionProcessing &&
                               gasPaymentMethod === "erc20" ? (
@@ -740,7 +742,7 @@ export default function Home({}: HomeProps) {
                                 disabled={
                                   loadingTokens || isTransactionProcessing
                                 }
-                                className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm text-white"
                               >
                                 {isTransactionProcessing &&
                                 gasPaymentMethod === "erc20" ? (
@@ -788,7 +790,7 @@ export default function Home({}: HomeProps) {
                                 disabled={
                                   loadingTokens || isTransactionProcessing
                                 }
-                                className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-3 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm text-white"
                               >
                                 {isTransactionProcessing &&
                                 gasPaymentMethod === "erc20" ? (
@@ -819,7 +821,7 @@ export default function Home({}: HomeProps) {
                                     refetchTokenHoldings();
                                   }
                                 }}
-                                className="w-full py-2 text-zinc-400 hover:text-zinc-300 transition-colors"
+                                className="w-full py-2 text-zinc-400 hover:text-zinc-300 transition-colors text-sm"
                               >
                                 Cancel
                               </button>
@@ -841,8 +843,8 @@ export default function Home({}: HomeProps) {
         </div>
 
         {/* Footer */}
-        <footer className="border-t border-zinc-800 mt-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center text-sm text-zinc-400">
+        <footer className="border-t border-[#2A2A2A] mt-auto">
+          <div className="max-w-[900px] mx-auto px-4 sm:px-6 lg:px-8 py-6 flex justify-between items-center text-sm text-zinc-400">
             <div className="flex items-center gap-2">
               <span>Built by Gelato</span>
               <span>•</span>
@@ -863,7 +865,7 @@ export default function Home({}: HomeProps) {
                 href="https://docs.gelato.network"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-zinc-300 transition-colors"
+                className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
               >
                 Documentation
               </a>
@@ -871,7 +873,7 @@ export default function Home({}: HomeProps) {
                 href="https://github.com/gelatodigital/eip7702-next-demo/tree/gelato-7702"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-zinc-300 transition-colors"
+                className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
               >
                 GitHub
               </a>

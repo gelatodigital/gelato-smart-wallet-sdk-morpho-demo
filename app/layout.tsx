@@ -13,11 +13,11 @@ export const metadata: Metadata = {
     description:
       "Explore EIP-7702 gas sponsorship and account abstraction in this interactive playground",
     images: [
-      "https://cdn.prod.website-files.com/672e31b60a8c3f5e53aced2d/673cc864ff13c827dfd59a02_ABC-OG%20Image-min%202.png",
+      "",
     ],
   },
   icons: {
-    icon: "/favicon.png",
+    icon: "https://raas.staging.gelato.network/images/favicon.ico",
   },
 };
 

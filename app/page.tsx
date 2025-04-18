@@ -24,7 +24,14 @@ import { http } from "wagmi";
 import UserProfile from "@/components/UserProfile";
 import { Contract, JsonRpcProvider } from "ethers";
 import { EmptyState } from "@/components/EmptyState";
-import { chainConfig, TOKEN_CONFIG, tokenDetails } from "./blockchain/config";
+import {
+  chainConfig,
+  marketParams,
+  morphoABI,
+  morphoAddress,
+  TOKEN_CONFIG,
+  tokenABI,
+} from "./blockchain/config";
 import { Toaster, toast } from "sonner";
 import { useDynamicContext, DynamicWidget } from "@dynamic-labs/sdk-react-core";
 import { GasEstimationModal } from "@/components/GasEstimationModal";
@@ -35,6 +42,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TransactionModal } from "@/components/TransactionModal";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { DynamicConnectButton } from "@dynamic-labs/sdk-react-core";
+import { BundlerAction } from "@morpho-org/bundler-sdk-ethers";
 import Image from "next/image";
 
 interface HomeProps {}
@@ -106,6 +114,9 @@ export default function Home({}: HomeProps) {
   const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
   const [showTokenSelection, setShowTokenSelection] = useState(false);
   const [estimatedGas, setEstimatedGas] = useState<string>("");
+  const [collateralAmount, setCollateralAmount] = useState<string>("");
+  const [supplyAmount, setSupplyAmount] = useState<string>("");
+  const [borrowAmount, setBorrowAmount] = useState<string>("");
 
   const [transactionDetails, setTransactionDetails] = useState<{
     isOpen: boolean;
@@ -143,6 +154,9 @@ export default function Home({}: HomeProps) {
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
     gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
   });
+
+  const [isMintingCollateral, setIsMintingCollateral] = useState(false);
+  const [isSupplyBorrowing, setIsSupplyBorrowing] = useState(false);
 
   const createSponsoredKernelClient = async () => {
     const kernelClient = createKernelAccountClient({
@@ -324,7 +338,11 @@ export default function Home({}: HomeProps) {
     }
   };
 
-  const handleGasEstimationConfirm = async (estimatedGas: string) => {
+  const handleGasEstimationConfirm = async (
+    estimatedGas: string,
+    supplyAmount: string,
+    borrowAmount: string
+  ) => {
     setShowGasEstimation(false);
     setLoadingTokens(true);
     setIsTransactionProcessing(true);
@@ -333,33 +351,70 @@ export default function Home({}: HomeProps) {
         throw new Error("Kernel client not initialized");
       }
 
-      let data = encodeFunctionData({
-        abi: tokenDetails.abi,
-        functionName: pendingAction === "drop" ? "drop" : "stake",
-        args: [],
+      // Convert input amounts to proper decimal format
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(supplyAmount) * 100000000)
+      ); // 8 decimals for cbBTC
+      const borrowAmountInDecimals = BigInt(
+        Math.floor(parseFloat(borrowAmount) * 1000000)
+      ); // 6 decimals for USDC
+
+      const supplyData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "supplyCollateral",
+        args: [
+          marketParams,
+          supplyAmountInDecimals,
+          kernelClient.account.address,
+          "0x",
+        ],
       });
 
-      const calls = [
-        await getERC20PaymasterApproveCall(kernelClient.paymaster, {
-          gasToken: TOKEN_CONFIG[gasToken].address as `0x${string}`,
-          approveAmount: parseEther("1"),
-          entryPoint: getEntryPoint("0.7"),
-        }),
-        {
-          to: tokenDetails.address as `0x${string}`,
-          value: BigInt(0),
-          data,
-        },
-      ];
-
-      const userOpHash = await kernelClient.sendUserOperation({
-        callData: await kernelClient.account.encodeCalls(calls),
+      const borrowData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "borrow",
+        args: [
+          marketParams,
+          borrowAmountInDecimals,
+          BigInt(0),
+          kernelClient.account.address,
+          kernelClient.account.address,
+        ],
       });
-      // Add initial log with estimated gas
+
+      const supplyBorrowUserOp = await kernelClient.sendUserOperation({
+        callData: await kernelClient.account.encodeCalls([
+          await getERC20PaymasterApproveCall(kernelClient.paymaster, {
+            gasToken: TOKEN_CONFIG[gasToken].address as `0x${string}`,
+            approveAmount: parseEther("1"),
+            entryPoint: getEntryPoint("0.7"),
+          }),
+          {
+            to: marketParams.collateralToken as `0x${string}`,
+            data: encodeFunctionData({
+              abi: tokenABI,
+              functionName: "approve",
+              args: [morphoAddress, supplyAmountInDecimals],
+            }),
+          },
+          {
+            to: morphoAddress as `0x${string}`,
+            value: BigInt(0),
+            data: supplyData,
+          },
+          {
+            to: morphoAddress as `0x${string}`,
+            value: BigInt(0),
+            data: borrowData,
+          },
+        ]),
+      });
+
+      // Add log for supply and borrow operation
       addLog(
         `Sending userOp through Gelato Bundler - paying gas with ${gasToken}`,
         {
-          userOpHash,
+          userOpHash: supplyBorrowUserOp,
           gasDetails: {
             estimatedGas,
             gasToken,
@@ -369,10 +424,18 @@ export default function Home({}: HomeProps) {
       );
 
       const receipt = await kernelClient.waitForUserOperationReceipt({
-        hash: userOpHash,
+        hash: supplyBorrowUserOp,
       });
       const txHash = receipt.receipt.transactionHash;
 
+      if (!txHash) {
+        addLog("Transaction failed", {
+          userOpHash: supplyBorrowUserOp,
+          isSponsored: false,
+        });
+        toast.error("Transaction failed");
+        return;
+      }
       // Get actual gas fees
       const actualGas = await getActualFees(
         txHash,
@@ -381,8 +444,8 @@ export default function Home({}: HomeProps) {
       );
 
       // Add completion log with all details
-      addLog("Minted drop tokens on chain successfully", {
-        userOpHash,
+      addLog("Supply and Borrow completed successfully", {
+        userOpHash: supplyBorrowUserOp,
         txHash,
         gasDetails: {
           estimatedGas,
@@ -392,11 +455,11 @@ export default function Home({}: HomeProps) {
         isSponsored: false,
       });
 
-      toast.success(
-        `${
-          pendingAction === "drop" ? "Tokens claimed" : "Tokens staked"
-        } successfully!`
-      );
+      toast.success("Supply and Borrow successful!");
+
+      // Reset the input amounts after successful transaction
+      setSupplyAmount("");
+      setBorrowAmount("");
 
       // Refresh token holdings after successful transaction
       if (accountAddress) {
@@ -404,48 +467,46 @@ export default function Home({}: HomeProps) {
       }
     } catch (error: any) {
       addLog(
-        `Error ${pendingAction === "drop" ? "claiming" : "staking"} tokens: ${
+        `Error in supply and borrow: ${
           typeof error === "string"
             ? error
             : error?.message || "Unknown error occurred"
         }`
       );
-      toast.error(
-        `Error ${
-          pendingAction === "drop" ? "claiming" : "staking"
-        } token. Check the logs`
-      );
+      toast.error(`Error in supply and borrow. Check the logs`);
     } finally {
       setLoadingTokens(false);
       setIsTransactionProcessing(false);
-      setPendingAction(null);
     }
   };
-
-  const dropToken = async () => {
+  const mintCollateralToken = async () => {
     if (gasPaymentMethod === "erc20") {
       setPendingAction("drop");
       setShowGasEstimation(true);
       return;
     }
 
-    setLoadingTokens(true);
-    setIsTransactionProcessing(true);
+    setIsMintingCollateral(true);
     try {
       const kernelClient = await createKernelClient(gasPaymentMethod);
-      let data = encodeFunctionData({
-        abi: tokenDetails.abi,
-        functionName: "drop",
-        args: [],
-      });
+
+      // Convert input amount to proper decimal format (8 decimals)
+      const amountInDecimals = BigInt(
+        Math.floor(parseFloat(collateralAmount) * 100000000)
+      );
 
       const calls = [
+        // Add approval call for collateral token
         {
-          to: tokenDetails.address as `0x${string}`,
-          value: BigInt(0),
-          data,
+          to: marketParams.collateralToken as `0x${string}`,
+          data: encodeFunctionData({
+            abi: tokenABI,
+            functionName: "mint",
+            args: [kernelClient.account.address, amountInDecimals],
+          }),
         },
       ];
+
       const userOpHash = await kernelClient.sendUserOperation({
         callData: await kernelClient.account.encodeCalls(calls),
         maxFeePerGas: BigInt(0),
@@ -462,7 +523,7 @@ export default function Home({}: HomeProps) {
         }
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const txHash = await Promise.race([
         // First promise: Get hash from task status
@@ -478,15 +539,26 @@ export default function Home({}: HomeProps) {
             return receipt.receipt.transactionHash;
           }),
       ]);
+      if (!txHash) {
+        addLog("Transaction failed", {
+          userOpHash,
+          isSponsored: gasPaymentMethod === "sponsored",
+        });
+        toast.error("Transaction failed");
+        return;
+      }
 
       // Add success log
-      addLog("Minted drop tokens on chain successfully", {
+      addLog("Minted collateral tokens on chain successfully", {
         userOpHash,
         txHash,
         isSponsored: gasPaymentMethod === "sponsored",
       });
 
       toast.success("Tokens claimed successfully!");
+
+      // Reset the input amount after successful mint
+      setCollateralAmount("");
 
       // Refresh token holdings after successful transaction
       if (accountAddress) {
@@ -503,8 +575,143 @@ export default function Home({}: HomeProps) {
       );
       toast.error(`Error claiming token. Check the logs`);
     } finally {
-      setLoadingTokens(false);
-      setIsTransactionProcessing(false);
+      setIsMintingCollateral(false);
+    }
+  };
+  const supplyAndBorrow = async () => {
+    if (gasPaymentMethod === "erc20") {
+      setPendingAction("drop");
+      setShowGasEstimation(true);
+      return;
+    }
+
+    setIsSupplyBorrowing(true);
+    try {
+      const kernelClient = await createKernelClient(gasPaymentMethod);
+
+      // Convert input amounts to proper decimal format
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(supplyAmount) * 100000000)
+      ); // 8 decimals for cbBTC
+      const borrowAmountInDecimals = BigInt(
+        Math.floor(parseFloat(borrowAmount) * 1000000)
+      ); // 6 decimals for USDC
+
+      const supplyData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "supplyCollateral",
+        args: [
+          marketParams,
+          supplyAmountInDecimals,
+          kernelClient.account.address,
+          "0x",
+        ],
+      });
+
+      const borrowData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "borrow",
+        args: [
+          marketParams,
+          borrowAmountInDecimals,
+          BigInt(0),
+          kernelClient.account.address,
+          kernelClient.account.address,
+        ],
+      });
+
+      const calls = [
+        // Add approval call for collateral token
+        {
+          to: marketParams.collateralToken as `0x${string}`,
+          data: encodeFunctionData({
+            abi: tokenABI,
+            functionName: "approve",
+            args: [morphoAddress, supplyAmountInDecimals],
+          }),
+        },
+        {
+          to: morphoAddress as `0x${string}`,
+          data: supplyData,
+        },
+        {
+          to: morphoAddress as `0x${string}`,
+          data: borrowData,
+        },
+      ];
+
+      const userOpHash = await kernelClient.sendUserOperation({
+        callData: await kernelClient.account.encodeCalls(calls),
+        maxFeePerGas: BigInt(0),
+        maxPriorityFeePerGas: BigInt(0),
+      });
+      console.log(userOpHash);
+
+      addLog(
+        gasPaymentMethod === "sponsored"
+          ? "Sending userOp through Gelato Bundler - Sponsored"
+          : `Sending UserOp through Gelato Bundler - paying gas with ${gasToken}`,
+        {
+          userOpHash,
+          isSponsored: gasPaymentMethod === "sponsored",
+        }
+      );
+
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      const txHash = await Promise.race([
+        // First promise: Get hash from task status
+        getTaskStatus(userOpHash).then((taskStatus) => {
+          return taskStatus.task.transactionHash;
+        }),
+        // Second promise: Get hash from kernel client
+        kernelClient
+          .waitForUserOperationReceipt({
+            hash: userOpHash,
+          })
+          .then((receipt: { receipt: { transactionHash: string } }) => {
+            return receipt.receipt.transactionHash;
+          }),
+      ]);
+
+      if (!txHash) {
+        addLog("Transaction failed", {
+          userOpHash,
+          isSponsored: gasPaymentMethod === "sponsored",
+        });
+        toast.error("Transaction failed");
+        return;
+      }
+
+      // Add success log
+      addLog("Supplied and Borrowed tokens on chain successfully", {
+        userOpHash,
+        txHash,
+        isSponsored: gasPaymentMethod === "sponsored",
+      });
+
+      toast.success("Supply and Borrow successful!");
+
+      // Reset the input amounts after successful transaction
+      setSupplyAmount("");
+      setBorrowAmount("");
+
+      // Refresh token holdings after successful transaction
+      if (accountAddress) {
+        refetchTokenHoldings();
+      }
+    } catch (error: any) {
+      console.log(error);
+      addLog(
+        `Error in supply and borrow: ${
+          typeof error === "string"
+            ? error
+            : error?.message || "Unknown error occurred"
+        }`
+      );
+      toast.error(`Error in supply and borrow. Check the logs`);
+    } finally {
+      setIsSupplyBorrowing(false);
     }
   };
   async function getTaskStatus(userOpHash: string) {
@@ -586,6 +793,40 @@ export default function Home({}: HomeProps) {
             </div>
           </div>
         )}
+        {isMintingCollateral && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-[#202020] border border-[#2A2A2A] rounded-[12px] shadow-xl w-80">
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                <div>
+                  <p className="text-sm font-medium text-blue-400">
+                    Minting Collateral Tokens
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    Please wait while we confirm your transaction
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {isSupplyBorrowing && (
+          <div className="fixed top-4 right-4 z-50">
+            <div className="bg-[#202020] border border-[#2A2A2A] rounded-[12px] shadow-xl w-80">
+              <div className="p-4 flex items-center gap-4">
+                <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
+                <div>
+                  <p className="text-sm font-medium text-blue-400">
+                    Supplying and Borrowing Tokens
+                  </p>
+                  <p className="text-xs text-zinc-400">
+                    Please wait while we confirm your transaction
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="max-w-[980px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <Header />
@@ -644,28 +885,103 @@ export default function Home({}: HomeProps) {
                           Sponsor transactions effortlessly and deliver a
                           frictionless user experience.
                         </p>
-                        <div className="w-full mt-auto">
+                        <div className="w-full space-y-4">
+                          <div className="relative">
+                            <input
+                              type="number"
+                              value={collateralAmount}
+                              onChange={(e) =>
+                                setCollateralAmount(e.target.value)
+                              }
+                              placeholder="Enter amount to mint"
+                              className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              min="0"
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+                              cbBTC
+                            </div>
+                          </div>
                           <button
                             onClick={() => {
                               setGasPaymentMethod("sponsored");
-                              dropToken();
+                              mintCollateralToken();
                             }}
-                            disabled={loadingTokens || isTransactionProcessing}
+                            disabled={
+                              isMintingCollateral ||
+                              isSupplyBorrowing ||
+                              !collateralAmount
+                            }
                             className="w-full py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative text-sm text-white"
                           >
-                            {isTransactionProcessing &&
-                            gasPaymentMethod === "sponsored" ? (
+                            {isMintingCollateral ? (
                               <div className="flex items-center justify-center">
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                                 <span>Processing Transaction...</span>
                               </div>
-                            ) : loadingTokens &&
-                              gasPaymentMethod === "sponsored" ? (
-                              "Minting..."
                             ) : (
-                              "Mint Drop Tokens"
+                              "Mint Collateral Tokens"
                             )}
                           </button>
+
+                          <div className="pt-4 border-t border-zinc-700">
+                            <h4 className="text-white text-sm font-medium mb-4">
+                              Supply and Borrow
+                            </h4>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  value={supplyAmount}
+                                  onChange={(e) =>
+                                    setSupplyAmount(e.target.value)
+                                  }
+                                  placeholder="Supply amount"
+                                  className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  min="0"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+                                  cbBTC
+                                </div>
+                              </div>
+                              <div className="relative">
+                                <input
+                                  type="number"
+                                  value={borrowAmount}
+                                  onChange={(e) =>
+                                    setBorrowAmount(e.target.value)
+                                  }
+                                  placeholder="Borrow amount"
+                                  className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  min="0"
+                                />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+                                  USDC
+                                </div>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setGasPaymentMethod("sponsored");
+                                supplyAndBorrow();
+                              }}
+                              disabled={
+                                isMintingCollateral ||
+                                isSupplyBorrowing ||
+                                !supplyAmount ||
+                                !borrowAmount
+                              }
+                              className="w-full mt-4 py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative text-sm text-white"
+                            >
+                              {isSupplyBorrowing ? (
+                                <div className="flex items-center justify-center">
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                  <span>Processing Transaction...</span>
+                                </div>
+                              ) : (
+                                "Supply and Borrow"
+                              )}
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -710,9 +1026,9 @@ export default function Home({}: HomeProps) {
                                 </div>
                               ) : loadingTokens &&
                                 gasPaymentMethod === "erc20" ? (
-                                "Minting..."
+                                "Processing..."
                               ) : (
-                                "Mint Drop Tokens"
+                                "Supply and Borrow"
                               )}
                             </button>
                           ) : (
@@ -891,7 +1207,6 @@ export default function Home({}: HomeProps) {
           kernelClient={kernelClient}
           gasToken={gasToken}
           tokenBalance={tokenBalance}
-          pendingAction={pendingAction!}
         />
 
         <TransactionModal

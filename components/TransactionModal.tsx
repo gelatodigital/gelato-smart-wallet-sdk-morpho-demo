@@ -58,7 +58,7 @@ export function TransactionModal({
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Transaction</span>
               <a
-                href={`${chainConfig.blockExplorers.default.url}/tx/${txHash}`}
+                href={`https://eth-sepolia.blockscout.com/tx/${txHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 inline-flex items-center gap-2 text-sm"

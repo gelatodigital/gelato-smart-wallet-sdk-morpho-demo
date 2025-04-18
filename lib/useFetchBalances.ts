@@ -3,7 +3,7 @@ import { Address, formatEther, formatUnits } from "viem";
 import {
   chainConfig,
   TOKEN_CONFIG,
-  tokenDetails,
+  marketParams,
 } from "@/app/blockchain/config";
 import { createPublicClient, http } from "viem";
 
@@ -16,7 +16,8 @@ interface TokenHoldingsResponse {
   ethBalance: string;
   usdcBalance: string;
   wethBalance: string;
-  dropBalance: string;
+  cbBTCBalance: string;
+  loanTokenBalance: string;
 }
 
 async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
@@ -56,9 +57,25 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
       args: [address],
     });
 
-    // Fetch Drop token balance
-    const dropBalance = await publicClient.readContract({
-      address: tokenDetails.address as `0x${string}`,
+    // Fetch cbBTC balance
+    const cbBTCBalance = await publicClient.readContract({
+      address: marketParams.collateralToken as `0x${string}`,
+      abi: [
+        {
+          name: "balanceOf",
+          type: "function",
+          stateMutability: "view",
+          inputs: [{ name: "account", type: "address" }],
+          outputs: [{ name: "balance", type: "uint256" }],
+        },
+      ],
+      functionName: "balanceOf",
+      args: [address],
+    });
+
+    // Fetch loan token (USDC) balance
+    const loanTokenBalance = await publicClient.readContract({
+      address: marketParams.loanToken as `0x${string}`,
       abi: [
         {
           name: "balanceOf",
@@ -82,7 +99,11 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
         wethBalance as bigint,
         TOKEN_CONFIG.WETH.decimals
       ),
-      dropBalance: formatEther(dropBalance as bigint), // Assuming 18 decimals for Drop token
+      cbBTCBalance: formatUnits(cbBTCBalance as bigint, 8), // Assuming 18 decimals for cbBTC
+      loanTokenBalance: formatUnits(
+        loanTokenBalance as bigint,
+        TOKEN_CONFIG.USDC.decimals
+      ),
     };
   } catch (error) {
     console.error("Error fetching token balances:", error);
@@ -90,7 +111,8 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
       ethBalance: "0",
       usdcBalance: "0",
       wethBalance: "0",
-      dropBalance: "0",
+      cbBTCBalance: "0",
+      loanTokenBalance: "0",
     };
   }
 }

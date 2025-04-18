@@ -1631,6 +1631,11 @@
     semver "^7.5.4"
     uuid "^9.0.1"
 
+"@morpho-org/bundler-sdk-ethers@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@morpho-org/bundler-sdk-ethers/-/bundler-sdk-ethers-1.0.3.tgz#39553ca9323778ae21217b24bd5d8675aed8631d"
+  integrity sha512-Xq1NA3d4TFl1W5CSWQ8239asal6QU+imnrWlnAU7pyPtHxhaKTgWkjP+XgXJqxK9bDcAr6C2+zy+BCXqh6GC4g==
+
 "@motionone/animation@^10.15.1", "@motionone/animation@^10.18.0":
   version "10.18.0"
   resolved "https://registry.npmjs.org/@motionone/animation/-/animation-10.18.0.tgz"

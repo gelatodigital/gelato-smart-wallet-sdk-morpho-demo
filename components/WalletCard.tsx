@@ -11,11 +11,7 @@ import {
   Loader2,
   Wallet,
 } from "lucide-react";
-import {
-  chainConfig,
-  TOKEN_CONFIG,
-  tokenDetails,
-} from "@/app/blockchain/config";
+import { chainConfig, TOKEN_CONFIG } from "@/app/blockchain/config";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import { formatUnits } from "viem";
 import Image from "next/image";
@@ -207,14 +203,14 @@ export default function WalletCard({
                   className="w-6 h-6"
                 />
               </div>
-              <span className="text-sm text-text-tertiary">USDC</span>
+              <span className="text-sm text-text-tertiary">USDC (Gas)</span>
             </div>
             <div className="text-sm text-text-title">
               {tokenHoldings?.usdcBalance || "0.00"}
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2">
+          <div className="flex items-center justify-between py-2 border-b border-dark-200">
             <div className="flex items-center">
               <div className="w-6 h-6 mr-2">
                 <Image
@@ -232,15 +228,39 @@ export default function WalletCard({
             </div>
           </div>
 
-          <div className="flex items-center justify-between py-2">
+          <div className="flex items-center justify-between py-2 border-b border-dark-200">
             <div className="flex items-center">
-              <div className="w-6 h-6 rounded-full bg-purple-900 mr-2 flex items-center justify-center text-sm">
-                D
+              <div className="w-6 h-6 mr-2">
+                <Image
+                  src="/bitcoin.svg"
+                  alt="cbBTC"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
               </div>
-              <span className="text-sm text-text-tertiary">DROP</span>
+              <span className="text-sm text-text-tertiary">cbBTC</span>
             </div>
             <div className="text-sm text-text-title">
-              {tokenHoldings?.dropBalance || "0.0000"}
+              {tokenHoldings?.cbBTCBalance || "0.0000"}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center">
+              <div className="w-6 h-6 mr-2">
+                <Image
+                  src="/usdc.svg"
+                  alt="USDC Loan"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
+              </div>
+              <span className="text-sm text-text-tertiary">USDC (Loan)</span>
+            </div>
+            <div className="text-sm text-text-title">
+              {tokenHoldings?.loanTokenBalance || "0.00"}
             </div>
           </div>
         </div>

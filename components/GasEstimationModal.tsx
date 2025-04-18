@@ -15,8 +15,14 @@ import {
 } from "@zerodev/sdk";
 import { getEntryPoint } from "@zerodev/sdk/constants";
 import { zeroAddress } from "viem";
-import { TOKEN_CONFIG, chainConfig } from "@/app/blockchain/config";
-import { tokenDetails } from "@/app/blockchain/config";
+import {
+  TOKEN_CONFIG,
+  chainConfig,
+  morphoABI,
+  morphoAddress,
+  marketParams,
+  tokenABI,
+} from "@/app/blockchain/config";
 import { encodeFunctionData } from "viem";
 import { ExternalLink } from "lucide-react";
 import { entryPoint07Address } from "viem/account-abstraction";
@@ -24,11 +30,14 @@ import { entryPoint07Address } from "viem/account-abstraction";
 interface GasEstimationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (estimatedGas: string) => void;
+  onConfirm: (
+    estimatedGas: string,
+    supplyAmount: string,
+    borrowAmount: string
+  ) => void;
   kernelClient: any;
   gasToken: "USDC" | "WETH";
   tokenBalance: string;
-  pendingAction: "drop";
 }
 
 export function GasEstimationModal({
@@ -38,14 +47,17 @@ export function GasEstimationModal({
   kernelClient,
   gasToken,
   tokenBalance,
-  pendingAction,
 }: GasEstimationModalProps) {
   const [estimatedGas, setEstimatedGas] = useState<string>("");
   const [isEstimating, setIsEstimating] = useState(false);
+  const [supplyAmount, setSupplyAmount] = useState<string>("");
+  const [borrowAmount, setBorrowAmount] = useState<string>("");
 
   useEffect(() => {
     if (isOpen) {
       setEstimatedGas("");
+      setSupplyAmount("");
+      setBorrowAmount("");
     }
   }, [isOpen]);
 
@@ -69,25 +81,63 @@ export function GasEstimationModal({
       const gasTokenAddress = TOKEN_CONFIG[gasToken].address;
       const entryPoint = getEntryPoint("0.7");
 
-      // Encode the actual transaction data
-      const data = encodeFunctionData({
-        abi: tokenDetails.abi,
-        functionName: "drop",
-        args: [],
+      // Convert input amounts to proper decimal format
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(supplyAmount) * 100000000)
+      ); // 8 decimals for cbBTC
+      const borrowAmountInDecimals = BigInt(
+        Math.floor(parseFloat(borrowAmount) * 1000000)
+      ); // 6 decimals for USDC
+
+      // Encode the supply and borrow transaction data
+      const supplyData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "supplyCollateral",
+        args: [
+          marketParams,
+          supplyAmountInDecimals,
+          kernelClient.account.address,
+          "0x",
+        ],
+      });
+
+      const borrowData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "borrow",
+        args: [
+          marketParams,
+          borrowAmountInDecimals,
+          BigInt(0),
+          kernelClient.account.address,
+          kernelClient.account.address,
+        ],
       });
 
       // Encode transaction calls for gas estimation
       const callData = await kernelClient.account.encodeCalls([
         // Approve the paymaster to spend gas tokens
         await getERC20PaymasterApproveCall(kernelClient.paymaster, {
-          gasToken: gasTokenAddress as `0x${string}`,
+          gasToken: TOKEN_CONFIG[gasToken].address as `0x${string}`,
           approveAmount: parseEther("1"),
-          entryPoint,
+          entryPoint: getEntryPoint("0.7"),
         }),
         {
-          to: tokenDetails.address as `0x${string}`,
+          to: marketParams.collateralToken as `0x${string}`,
+          data: encodeFunctionData({
+            abi: tokenABI,
+            functionName: "approve",
+            args: [morphoAddress, supplyAmountInDecimals],
+          }),
+        },
+        {
+          to: morphoAddress as `0x${string}`,
           value: BigInt(0),
-          data,
+          data: supplyData,
+        },
+        {
+          to: morphoAddress as `0x${string}`,
+          value: BigInt(0),
+          data: borrowData,
         },
       ]);
 
@@ -123,8 +173,8 @@ export function GasEstimationModal({
             Gas Fee Estimation
           </DialogTitle>
           <DialogDescription className="text-zinc-400">
-            This will estimate the gas fees for your {pendingAction} transaction
-            in {TOKEN_CONFIG[gasToken].symbol}
+            This will estimate the gas fees for your supply and borrow
+            transaction in {TOKEN_CONFIG[gasToken].symbol}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -133,6 +183,38 @@ export function GasEstimationModal({
             <span className="text-sm">
               {isEstimating ? "Estimating..." : estimatedGas}
             </span>
+          </div>
+
+          {/* Supply and Borrow Input Fields */}
+          <div className="space-y-4">
+            <div className="relative">
+              <input
+                type="number"
+                value={supplyAmount}
+                onChange={(e) => setSupplyAmount(e.target.value)}
+                placeholder="Supply amount"
+                className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                min="0"
+                step="0.00000001"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+                cbBTC
+              </div>
+            </div>
+            <div className="relative">
+              <input
+                type="number"
+                value={borrowAmount}
+                onChange={(e) => setBorrowAmount(e.target.value)}
+                placeholder="Borrow amount"
+                className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                min="0"
+                step="0.000001"
+              />
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+                USDC
+              </div>
+            </div>
           </div>
 
           {/* Token Information Section */}
@@ -188,7 +270,7 @@ export function GasEstimationModal({
           </Button>
           <Button
             onClick={estimateGasFee}
-            disabled={isEstimating}
+            disabled={isEstimating || !supplyAmount || !borrowAmount}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isEstimating ? (
@@ -203,8 +285,10 @@ export function GasEstimationModal({
             )}
           </Button>
           <Button
-            onClick={() => onConfirm(estimatedGas)}
-            disabled={!estimatedGas || isEstimating}
+            onClick={() => onConfirm(estimatedGas, supplyAmount, borrowAmount)}
+            disabled={
+              !estimatedGas || isEstimating || !supplyAmount || !borrowAmount
+            }
             className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-purple-500/20"
           >
             <svg

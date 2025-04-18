@@ -13,6 +13,7 @@
     "@dynamic-labs/ethereum-aa": "^4.10.0",
     "@dynamic-labs/ethers-v6": "^4.9.1",
     "@dynamic-labs/sdk-react-core": "^4.10.0",
+    "@morpho-org/bundler-sdk-ethers": "^1.0.3",
     "@radix-ui/react-dialog": "^1.1.2",
     "@radix-ui/react-slot": "^1.0.0",
     "@tanstack/react-query": "^5.59.15",

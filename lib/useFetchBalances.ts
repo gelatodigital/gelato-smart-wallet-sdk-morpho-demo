@@ -14,7 +14,6 @@ const publicClient = createPublicClient({
 
 interface TokenHoldingsResponse {
   ethBalance: string;
-  usdcBalance: string;
   wethBalance: string;
   cbBTCBalance: string;
   loanTokenBalance: string;
@@ -24,22 +23,6 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
   try {
     // Fetch native ETH balance
     const ethBalance = await publicClient.getBalance({ address });
-
-    // Fetch USDC balance
-    const usdcBalance = await publicClient.readContract({
-      address: TOKEN_CONFIG.USDC.address as `0x${string}`,
-      abi: [
-        {
-          name: "balanceOf",
-          type: "function",
-          stateMutability: "view",
-          inputs: [{ name: "account", type: "address" }],
-          outputs: [{ name: "balance", type: "uint256" }],
-        },
-      ],
-      functionName: "balanceOf",
-      args: [address],
-    });
 
     // Fetch WETH balance
     const wethBalance = await publicClient.readContract({
@@ -91,10 +74,6 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
 
     return {
       ethBalance: formatEther(ethBalance),
-      usdcBalance: formatUnits(
-        usdcBalance as bigint,
-        TOKEN_CONFIG.USDC.decimals
-      ),
       wethBalance: formatUnits(
         wethBalance as bigint,
         TOKEN_CONFIG.WETH.decimals
@@ -109,7 +88,6 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
     console.error("Error fetching token balances:", error);
     return {
       ethBalance: "0",
-      usdcBalance: "0",
       wethBalance: "0",
       cbBTCBalance: "0",
       loanTokenBalance: "0",
@@ -117,14 +95,11 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
   }
 }
 
-export function useTokenHoldings(
-  address: Address | undefined,
-  activeToken?: "USDC" | "WETH"
-) {
+export function useTokenHoldings(address: Address | undefined) {
   return useQuery({
     queryKey: ["tokenHoldings", address],
     queryFn: () => fetchBalances(address!),
     enabled: !!address,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: 5000, // Refetch every 5 seconds
   });
 }

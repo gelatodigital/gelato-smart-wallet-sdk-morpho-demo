@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { parseEther, formatUnits, http } from "viem";
+import { parseEther, formatUnits, http, Address } from "viem";
 import {
   createZeroDevPaymasterClient,
   getERC20PaymasterApproveCall,
@@ -22,22 +22,22 @@ import {
   morphoAddress,
   marketParams,
   tokenABI,
+  oracleABI,
 } from "@/app/blockchain/config";
 import { encodeFunctionData } from "viem";
 import { ExternalLink } from "lucide-react";
 import { entryPoint07Address } from "viem/account-abstraction";
+import { Contract, ethers } from "ethers";
+import { toast } from "sonner";
+import { useTokenHoldings } from "@/lib/useFetchBalances";
 
 interface GasEstimationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (
-    estimatedGas: string,
-    supplyAmount: string,
-    borrowAmount: string
-  ) => void;
+  onConfirm: (estimatedGas: string, borrowAmount: string) => void;
   kernelClient: any;
   gasToken: "USDC" | "WETH";
-  tokenBalance: string;
+  accountAddress: string;
 }
 
 export function GasEstimationModal({
@@ -46,20 +46,57 @@ export function GasEstimationModal({
   onConfirm,
   kernelClient,
   gasToken,
-  tokenBalance,
+  accountAddress,
 }: GasEstimationModalProps) {
   const [estimatedGas, setEstimatedGas] = useState<string>("");
   const [isEstimating, setIsEstimating] = useState(false);
-  const [supplyAmount, setSupplyAmount] = useState<string>("");
-  const [borrowAmount, setBorrowAmount] = useState<string>("");
+  const [requiredBTCAmount, setRequiredBTCAmount] = useState<string>("0");
+  const [btcPrice, setBtcPrice] = useState("");
+  const [borrowAmount, setBorrowAmount] = useState<string>();
+  const [isCalculatingSupply, setIsCalculatingSupply] = useState(false);
+  const { data: tokenHoldings, refetch: refetchTokenHoldings } =
+    useTokenHoldings(accountAddress as Address);
 
-  useEffect(() => {
-    if (isOpen) {
-      setEstimatedGas("");
-      setSupplyAmount("");
-      setBorrowAmount("");
+  const fetchBtcPrice = async (borrowAmount: string) => {
+    try {
+      setIsCalculatingSupply(true);
+      setBorrowAmount(borrowAmount);
+      if (borrowAmount == "0" || borrowAmount == "") {
+        setRequiredBTCAmount("");
+        return;
+      }
+      const provider = new ethers.JsonRpcProvider(
+        process.env.NEXT_PUBLIC_RPC_URL
+      );
+      const oracleContract = new Contract(
+        marketParams.oracle,
+        oracleABI,
+        provider
+      );
+      const price = await oracleContract.latestAnswer();
+      console.log(price);
+      setBtcPrice(Number(price).toString());
+      calculateRequiredBTCAmount(Number(price), borrowAmount);
+    } catch (error) {
+      console.error("Error fetching BTC price:", error);
+    } finally {
+      setIsCalculatingSupply(false);
     }
-  }, [isOpen]);
+  };
+
+  const calculateRequiredBTCAmount = (
+    btcPrice: number,
+    borrowAmount: string
+  ) => {
+    try {
+      if (btcPrice > 0 && borrowAmount) {
+        const calculatedAmount = (Number(borrowAmount) / btcPrice) * 1e8; // Convert price from 8 decimals
+        setRequiredBTCAmount(calculatedAmount.toFixed(8));
+      }
+    } catch (error) {
+      console.error("Error calculating required BTC amount:", error);
+    }
+  };
 
   const formatBalance = (value: string, decimals: number) => {
     try {
@@ -80,14 +117,33 @@ export function GasEstimationModal({
       setIsEstimating(true);
       const gasTokenAddress = TOKEN_CONFIG[gasToken].address;
       const entryPoint = getEntryPoint("0.7");
-
+      const provider = new ethers.JsonRpcProvider(
+        process.env.NEXT_PUBLIC_RPC_URL
+      );
+      const oracleContract = new Contract(
+        marketParams.oracle,
+        oracleABI,
+        provider
+      );
+      const price = await oracleContract.latestAnswer();
       // Convert input amounts to proper decimal format
-      const supplyAmountInDecimals = BigInt(
-        Math.floor(parseFloat(supplyAmount) * 100000000)
-      ); // 8 decimals for cbBTC
+      // 8 decimals for cbBTC
       const borrowAmountInDecimals = BigInt(
-        Math.floor(parseFloat(borrowAmount) * 1000000)
+        Math.floor(parseFloat(borrowAmount as string) * 1000000)
       ); // 6 decimals for USDC
+
+      const requiredBTCAmount = (Number(borrowAmount) / Number(price)) * 1e8; // Convert price from 8 decimals
+
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(requiredBTCAmount.toString()) * 100000000)
+      );
+      if (
+        Number(tokenHoldings?.cbBTCBalance as string) <
+        Number(requiredBTCAmount)
+      ) {
+        toast.error("Insufficient collateral balance, Mint Now !!");
+        return;
+      }
 
       // Encode the supply and borrow transaction data
       const supplyData = encodeFunctionData({
@@ -166,7 +222,16 @@ export function GasEstimationModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={() => {
+        onClose();
+        setBorrowAmount("");
+        setRequiredBTCAmount("");
+        setEstimatedGas("");
+        setBtcPrice("");
+      }}
+    >
       <DialogContent className="sm:max-w-[425px] bg-zinc-900 border-zinc-800">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
@@ -178,38 +243,70 @@ export function GasEstimationModal({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="flex justify-between items-center p-3 bg-zinc-800 rounded-lg">
-            <span className="text-sm font-medium">Estimated Gas:</span>
-            <span className="text-sm">
-              {isEstimating ? "Estimating..." : estimatedGas}
-            </span>
+          <div className="flex flex-col gap-4">
+            <div className="flex justify-between items-center p-3 bg-zinc-800 rounded-lg">
+              <span className="text-sm">Current BTC Price:</span>
+              <span className="text-sm">
+                {isCalculatingSupply ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>calculating...</span>
+                  </div>
+                ) : (
+                  `$${(Number(btcPrice) / 1e8).toFixed(2)}`
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between items-center p-3 bg-zinc-800 rounded-lg">
+              <span className="text-sm">Estimated Gas:</span>
+              <span className="text-sm">
+                {isEstimating ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>calculating...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>{estimatedGas.split(" ")[0]}</span>
+                    <span className="px-2 py-0.5 bg-zinc-700 rounded-full text-xs">
+                      {TOKEN_CONFIG[gasToken].symbol}
+                    </span>
+                  </div>
+                )}
+              </span>
+            </div>
           </div>
 
-          {/* Supply and Borrow Input Fields */}
+          {/* Transaction Details */}
           <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="number"
-                value={supplyAmount}
-                onChange={(e) => setSupplyAmount(e.target.value)}
-                placeholder="Supply amount"
-                className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                min="0"
-                step="0.00000001"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
-                cbBTC
-              </div>
+            <div className="flex justify-between items-center p-3 bg-zinc-800 rounded-lg">
+              <span className="text-sm">Supply Amount:</span>
+              <span className="text-sm">
+                {isCalculatingSupply ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>calculating...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>{requiredBTCAmount}</span>
+                    <span className="px-2 py-0.5 bg-zinc-700 rounded-full text-xs">
+                      cbBTC
+                    </span>
+                  </div>
+                )}
+              </span>
             </div>
+
+            {/* Borrow Amount Input Field */}
             <div className="relative">
               <input
                 type="number"
                 value={borrowAmount}
-                onChange={(e) => setBorrowAmount(e.target.value)}
-                placeholder="Borrow amount"
+                onChange={(e) => fetchBtcPrice(e.target.value)}
+                placeholder="Enter borrow amount"
                 className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 min="0"
-                step="0.000001"
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
                 USDC
@@ -235,42 +332,48 @@ export function GasEstimationModal({
               </div>
 
               <div className="pt-2">
-                {gasToken === "USDC" ? (
-                  <a
-                    href="https://faucet.circle.com/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                  >
-                    Get 10 USDC from Circle Faucet
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                ) : (
-                  <a
-                    href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                  >
-                    Mint {TOKEN_CONFIG[gasToken].symbol} for your smart account
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
-                )}
+                <a
+                  href={`${chainConfig.blockExplorers.default.url}/address/${TOKEN_CONFIG[gasToken].address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                >
+                  Mint {TOKEN_CONFIG[gasToken].symbol} for your smart account
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
           </div>
+          <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700">
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              This transaction will be processed in four sequential steps:
+            </p>
+            <ol className="text-xs text-zinc-400 leading-relaxed mt-1 ml-4 list-decimal">
+              <li>Approval of USDC for Gas Payment</li>
+              <li>Approval of collateral tokens (cbBTC)</li>
+              <li>Supplying collateral to the market</li>
+              <li>Borrowing loan tokens (USDC)</li>
+            </ol>
+          </div>
         </div>
+        {/* Transaction Steps Explanation */}
         <DialogFooter className="gap-2">
           <Button
             variant="outline"
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              setBorrowAmount("");
+              setRequiredBTCAmount("");
+              setEstimatedGas("");
+              setBtcPrice("");
+            }}
             className="text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700"
           >
             Cancel
           </Button>
           <Button
             onClick={estimateGasFee}
-            disabled={isEstimating || !supplyAmount || !borrowAmount}
+            disabled={isEstimating || !borrowAmount}
             className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isEstimating ? (
@@ -285,10 +388,12 @@ export function GasEstimationModal({
             )}
           </Button>
           <Button
-            onClick={() => onConfirm(estimatedGas, supplyAmount, borrowAmount)}
-            disabled={
-              !estimatedGas || isEstimating || !supplyAmount || !borrowAmount
-            }
+            onClick={() => {
+              onConfirm(estimatedGas, borrowAmount as string);
+              setBorrowAmount("");
+              setRequiredBTCAmount("");
+            }}
+            disabled={!estimatedGas || isEstimating || !borrowAmount}
             className="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-purple-500/20"
           >
             <svg

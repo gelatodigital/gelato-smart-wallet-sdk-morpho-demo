@@ -60,10 +60,7 @@ export default function WalletCard({
   handleLogout,
 }: WalletCardProps) {
   const [isCopied, setIsCopied] = useState(false);
-  const { data: tokenHoldings } = useTokenHoldings(
-    accountAddress as Address,
-    gasToken
-  );
+  const { data: tokenHoldings } = useTokenHoldings(accountAddress as Address);
 
   const handleCopy = useCallback(() => {
     navigator.clipboard.writeText(accountAddress);
@@ -196,24 +193,6 @@ export default function WalletCard({
             <div className="flex items-center">
               <div className="w-6 h-6 mr-2">
                 <Image
-                  src="/usdc.svg"
-                  alt="USDC"
-                  width={24}
-                  height={24}
-                  className="w-6 h-6"
-                />
-              </div>
-              <span className="text-sm text-text-tertiary">USDC (Gas)</span>
-            </div>
-            <div className="text-sm text-text-title">
-              {tokenHoldings?.usdcBalance || "0.00"}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between py-2 border-b border-dark-200">
-            <div className="flex items-center">
-              <div className="w-6 h-6 mr-2">
-                <Image
                   src="/weth.svg"
                   alt="WETH"
                   width={24}
@@ -257,7 +236,7 @@ export default function WalletCard({
                   className="w-6 h-6"
                 />
               </div>
-              <span className="text-sm text-text-tertiary">USDC (Loan)</span>
+              <span className="text-sm text-text-tertiary">USDC</span>
             </div>
             <div className="text-sm text-text-title">
               {tokenHoldings?.loanTokenBalance || "0.00"}

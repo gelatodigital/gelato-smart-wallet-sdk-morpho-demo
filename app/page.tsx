@@ -29,6 +29,7 @@ import {
   marketParams,
   morphoABI,
   morphoAddress,
+  oracleABI,
   TOKEN_CONFIG,
   tokenABI,
 } from "./blockchain/config";
@@ -44,6 +45,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { DynamicConnectButton } from "@dynamic-labs/sdk-react-core";
 import { BundlerAction } from "@morpho-org/bundler-sdk-ethers";
 import Image from "next/image";
+import { SupplyBorrowModal } from "@/components/SupplyBorrowModal";
 
 interface HomeProps {}
 
@@ -108,14 +110,9 @@ export default function Home({}: HomeProps) {
   const [loadingTokens, setLoadingTokens] = useState<boolean>(false);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
   const [showGasEstimation, setShowGasEstimation] = useState(false);
-  const [pendingAction, setPendingAction] = useState<"drop" | null>(null);
-  const [tokenBalance, setTokenBalance] = useState<any>("0");
-  const [isCopied, setIsCopied] = useState(false);
   const [isTransactionProcessing, setIsTransactionProcessing] = useState(false);
   const [showTokenSelection, setShowTokenSelection] = useState(false);
-  const [estimatedGas, setEstimatedGas] = useState<string>("");
   const [collateralAmount, setCollateralAmount] = useState<string>("");
-  const [supplyAmount, setSupplyAmount] = useState<string>("");
   const [borrowAmount, setBorrowAmount] = useState<string>("");
 
   const [transactionDetails, setTransactionDetails] = useState<{
@@ -145,7 +142,7 @@ export default function Home({}: HomeProps) {
   }
 
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
-    useTokenHoldings(accountAddress as Address, gasToken);
+    useTokenHoldings(accountAddress as Address);
   // Use React Query for deployment status
   const { data: isDeployed } = useQuery({
     queryKey: ["isDeployed", accountAddress],
@@ -157,6 +154,7 @@ export default function Home({}: HomeProps) {
 
   const [isMintingCollateral, setIsMintingCollateral] = useState(false);
   const [isSupplyBorrowing, setIsSupplyBorrowing] = useState(false);
+  const [showSupplyBorrowModal, setShowSupplyBorrowModal] = useState(false);
 
   const createSponsoredKernelClient = async () => {
     const kernelClient = createKernelAccountClient({
@@ -225,14 +223,6 @@ export default function Home({}: HomeProps) {
     return kernelClient;
   };
 
-  // Utility function for human readable datetime
-  const humanReadableDateTime = (): string => {
-    return new Date()
-      .toLocaleString()
-      .replaceAll("/", "-")
-      .replaceAll(":", ".");
-  };
-
   const logout = async () => {
     try {
       handleLogOut();
@@ -270,26 +260,6 @@ export default function Home({}: HomeProps) {
       ]);
     },
     []
-  );
-
-  const addTaskStatusLog = useCallback(
-    (userOpHash: string) => {
-      const taskStatusUrl = `https://relay.gelato.digital/tasks/status/${userOpHash}`;
-      addLog(
-        <span>
-          View UserOp status:{" "}
-          <a
-            href={taskStatusUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:text-blue-400 underline"
-          >
-            {taskStatusUrl}
-          </a>
-        </span>
-      );
-    },
-    [addLog]
   );
 
   const createKernelClient = async (method: "sponsored" | "erc20") => {
@@ -340,7 +310,6 @@ export default function Home({}: HomeProps) {
 
   const handleGasEstimationConfirm = async (
     estimatedGas: string,
-    supplyAmount: string,
     borrowAmount: string
   ) => {
     setShowGasEstimation(false);
@@ -351,13 +320,31 @@ export default function Home({}: HomeProps) {
         throw new Error("Kernel client not initialized");
       }
 
+      const oracleContract = new Contract(
+        marketParams.oracle,
+        oracleABI,
+        provider
+      );
+      const price = await oracleContract.latestAnswer();
       // Convert input amounts to proper decimal format
-      const supplyAmountInDecimals = BigInt(
-        Math.floor(parseFloat(supplyAmount) * 100000000)
-      ); // 8 decimals for cbBTC
+      // 8 decimals for cbBTC
       const borrowAmountInDecimals = BigInt(
         Math.floor(parseFloat(borrowAmount) * 1000000)
       ); // 6 decimals for USDC
+
+      const requiredBTCAmount = (Number(borrowAmount) / Number(price)) * 1e8; // Convert price from 8 decimals
+
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(requiredBTCAmount.toString()) * 100000000)
+      );
+
+      if (
+        Number(tokenHoldings?.cbBTCBalance as string) <
+        Number(requiredBTCAmount)
+      ) {
+        toast.error("Insufficient collateral balance, Mint Now !!");
+        return;
+      }
 
       const supplyData = encodeFunctionData({
         abi: morphoABI,
@@ -444,7 +431,7 @@ export default function Home({}: HomeProps) {
       );
 
       // Add completion log with all details
-      addLog("Supply and Borrow completed successfully", {
+      addLog("Supplied and Borrowed tokens on chain successfully", {
         userOpHash: supplyBorrowUserOp,
         txHash,
         gasDetails: {
@@ -455,10 +442,9 @@ export default function Home({}: HomeProps) {
         isSponsored: false,
       });
 
-      toast.success("Supply and Borrow successful!");
+      toast.success("Borrow Tokens successful!");
 
       // Reset the input amounts after successful transaction
-      setSupplyAmount("");
       setBorrowAmount("");
 
       // Refresh token holdings after successful transaction
@@ -481,7 +467,6 @@ export default function Home({}: HomeProps) {
   };
   const mintCollateralToken = async () => {
     if (gasPaymentMethod === "erc20") {
-      setPendingAction("drop");
       setShowGasEstimation(true);
       return;
     }
@@ -523,22 +508,11 @@ export default function Home({}: HomeProps) {
         }
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const receipt = await kernelClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
 
-      const txHash = await Promise.race([
-        // First promise: Get hash from task status
-        getTaskStatus(userOpHash).then((taskStatus) => {
-          return taskStatus.task.transactionHash;
-        }),
-        // Second promise: Get hash from kernel client
-        kernelClient
-          .waitForUserOperationReceipt({
-            hash: userOpHash,
-          })
-          .then((receipt: { receipt: { transactionHash: string } }) => {
-            return receipt.receipt.transactionHash;
-          }),
-      ]);
+      const txHash = receipt.receipt.transactionHash;
       if (!txHash) {
         addLog("Transaction failed", {
           userOpHash,
@@ -578,24 +552,43 @@ export default function Home({}: HomeProps) {
       setIsMintingCollateral(false);
     }
   };
+
   const supplyAndBorrow = async () => {
     if (gasPaymentMethod === "erc20") {
-      setPendingAction("drop");
       setShowGasEstimation(true);
       return;
     }
-
+    setShowSupplyBorrowModal(false);
     setIsSupplyBorrowing(true);
     try {
       const kernelClient = await createKernelClient(gasPaymentMethod);
 
+      const oracleContract = new Contract(
+        marketParams.oracle,
+        oracleABI,
+        provider
+      );
+      const price = await oracleContract.latestAnswer();
       // Convert input amounts to proper decimal format
-      const supplyAmountInDecimals = BigInt(
-        Math.floor(parseFloat(supplyAmount) * 100000000)
-      ); // 8 decimals for cbBTC
+      // 8 decimals for cbBTC
       const borrowAmountInDecimals = BigInt(
         Math.floor(parseFloat(borrowAmount) * 1000000)
       ); // 6 decimals for USDC
+
+      const requiredBTCAmount = (Number(borrowAmount) / Number(price)) * 1e8; // Convert price from 8 decimals
+
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(requiredBTCAmount.toString()) * 100000000)
+      );
+
+      if (
+        Number(tokenHoldings?.cbBTCBalance as string) <
+        Number(requiredBTCAmount)
+      ) {
+        setBorrowAmount("");
+        toast.error("Insufficient collateral balance, Mint Now !!");
+        return;
+      }
 
       const supplyData = encodeFunctionData({
         abi: morphoABI,
@@ -657,22 +650,10 @@ export default function Home({}: HomeProps) {
         }
       );
 
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-
-      const txHash = await Promise.race([
-        // First promise: Get hash from task status
-        getTaskStatus(userOpHash).then((taskStatus) => {
-          return taskStatus.task.transactionHash;
-        }),
-        // Second promise: Get hash from kernel client
-        kernelClient
-          .waitForUserOperationReceipt({
-            hash: userOpHash,
-          })
-          .then((receipt: { receipt: { transactionHash: string } }) => {
-            return receipt.receipt.transactionHash;
-          }),
-      ]);
+      const receipt = await kernelClient.waitForUserOperationReceipt({
+        hash: userOpHash,
+      });
+      const txHash = receipt.receipt.transactionHash;
 
       if (!txHash) {
         addLog("Transaction failed", {
@@ -690,10 +671,9 @@ export default function Home({}: HomeProps) {
         isSponsored: gasPaymentMethod === "sponsored",
       });
 
-      toast.success("Supply and Borrow successful!");
+      toast.success("Borrow Tokens successful!");
 
       // Reset the input amounts after successful transaction
-      setSupplyAmount("");
       setBorrowAmount("");
 
       // Refresh token holdings after successful transaction
@@ -719,11 +699,6 @@ export default function Home({}: HomeProps) {
     const response = await fetch(url);
     return response.json();
   }
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(accountAddress);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
-  }, [accountAddress]);
 
   useEffect(() => {
     async function createAccount() {
@@ -746,16 +721,6 @@ export default function Home({}: HomeProps) {
       setIsInitializing(true);
     }
   }, [primaryWallet]);
-
-  useEffect(() => {
-    if (tokenHoldings) {
-      setTokenBalance(
-        gasToken === "USDC"
-          ? tokenHoldings.usdcBalance
-          : tokenHoldings.wethBalance
-      );
-    }
-  }, [tokenHoldings, gasToken]);
 
   const handleShowTransactionDetails = useCallback((details: any) => {
     setTransactionDetails({
@@ -817,7 +782,7 @@ export default function Home({}: HomeProps) {
                 <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin flex-shrink-0"></div>
                 <div>
                   <p className="text-sm font-medium text-blue-400">
-                    Supplying and Borrowing Tokens
+                    Borrowing Tokens
                   </p>
                   <p className="text-xs text-zinc-400">
                     Please wait while we confirm your transaction
@@ -885,6 +850,9 @@ export default function Home({}: HomeProps) {
                           Sponsor transactions effortlessly and deliver a
                           frictionless user experience.
                         </p>
+                        <h4 className="text-white text-sm font-medium mb-4">
+                          Mint Collateral
+                        </h4>
                         <div className="w-full space-y-4">
                           <div className="relative">
                             <input
@@ -919,55 +887,37 @@ export default function Home({}: HomeProps) {
                                 <span>Processing Transaction...</span>
                               </div>
                             ) : (
-                              "Mint Collateral Tokens"
+                              "Mint cbBTC"
                             )}
                           </button>
 
                           <div className="pt-4 border-t border-zinc-700">
                             <h4 className="text-white text-sm font-medium mb-4">
-                              Supply and Borrow
+                              Borrow Loan
                             </h4>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  value={supplyAmount}
-                                  onChange={(e) =>
-                                    setSupplyAmount(e.target.value)
-                                  }
-                                  placeholder="Supply amount"
-                                  className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  min="0"
-                                />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
-                                  cbBTC
-                                </div>
-                              </div>
-                              <div className="relative">
-                                <input
-                                  type="number"
-                                  value={borrowAmount}
-                                  onChange={(e) =>
-                                    setBorrowAmount(e.target.value)
-                                  }
-                                  placeholder="Borrow amount"
-                                  className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  min="0"
-                                />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
-                                  USDC
-                                </div>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                value={borrowAmount}
+                                onChange={(e) =>
+                                  setBorrowAmount(e.target.value)
+                                }
+                                placeholder="Borrow amount"
+                                className="w-full py-3 px-4 bg-zinc-800 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                min="0"
+                              />
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 text-sm">
+                                USDC
                               </div>
                             </div>
                             <button
                               onClick={() => {
                                 setGasPaymentMethod("sponsored");
-                                supplyAndBorrow();
+                                setShowSupplyBorrowModal(true);
                               }}
                               disabled={
                                 isMintingCollateral ||
                                 isSupplyBorrowing ||
-                                !supplyAmount ||
                                 !borrowAmount
                               }
                               className="w-full mt-4 py-3 bg-zinc-800 rounded-md hover:bg-zinc-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative text-sm text-white"
@@ -978,7 +928,7 @@ export default function Home({}: HomeProps) {
                                   <span>Processing Transaction...</span>
                                 </div>
                               ) : (
-                                "Supply and Borrow"
+                                "Borrow USDC"
                               )}
                             </button>
                           </div>
@@ -1028,7 +978,7 @@ export default function Home({}: HomeProps) {
                                 gasPaymentMethod === "erc20" ? (
                                 "Processing..."
                               ) : (
-                                "Supply and Borrow"
+                                "Borrow USDC"
                               )}
                             </button>
                           ) : (
@@ -1037,7 +987,6 @@ export default function Home({}: HomeProps) {
                                 onClick={async () => {
                                   setGasToken("USDC");
                                   setGasPaymentMethod("erc20");
-                                  setPendingAction("drop");
                                   try {
                                     // Create a new kernel client with USDC configuration
                                     const kernelClient =
@@ -1085,7 +1034,6 @@ export default function Home({}: HomeProps) {
                                 onClick={async () => {
                                   setGasToken("WETH");
                                   setGasPaymentMethod("erc20");
-                                  setPendingAction("drop");
                                   try {
                                     // Create a new kernel client with WETH configuration
                                     const kernelClient =
@@ -1197,6 +1145,16 @@ export default function Home({}: HomeProps) {
           </div>
         </footer>
 
+        <SupplyBorrowModal
+          isOpen={showSupplyBorrowModal}
+          onClose={() => {
+            setShowSupplyBorrowModal(false);
+            setBorrowAmount("");
+          }}
+          onConfirm={supplyAndBorrow}
+          borrowAmount={borrowAmount}
+        />
+
         <GasEstimationModal
           isOpen={showGasEstimation}
           onClose={() => {
@@ -1206,7 +1164,7 @@ export default function Home({}: HomeProps) {
           onConfirm={handleGasEstimationConfirm}
           kernelClient={kernelClient}
           gasToken={gasToken}
-          tokenBalance={tokenBalance}
+          accountAddress={accountAddress}
         />
 
         <TransactionModal

@@ -843,12 +843,12 @@ export default function Home({}: HomeProps) {
                             </svg>
                           </div>
                           <h3 className="text-white text-md font-medium break-words ps-2">
-                            Gas sponsorship
+                            Gas sponsorship with Gelato's 1Balance Paymaster
                           </h3>
                         </div>
                         <p className="text-zinc-400 text-sm flex-grow break-words mb-4">
-                          Sponsor transactions effortlessly and deliver a
-                          frictionless user experience.
+                          Sponsor transactions on behalf of users using Gelato's
+                          1Balance Paymaster.
                         </p>
                         <h4 className="text-white text-sm font-medium mb-4">
                           Mint Collateral
@@ -928,7 +928,19 @@ export default function Home({}: HomeProps) {
                                   <span>Processing Transaction...</span>
                                 </div>
                               ) : (
-                                "Borrow USDC"
+                                <div className="flex items-center justify-center gap-1">
+                                  <div className="w-6 h-6 flex items-center justify-center">
+                                    <Image
+                                      src="/morpho-logo.png"
+                                      alt="Morpho"
+                                      width={30}
+                                      height={30}
+                                      className="w-6 h-6"
+                                      priority
+                                    />
+                                  </div>
+                                  Borrow USDC with Morpho
+                                </div>
                               )}
                             </button>
                           </div>
@@ -952,12 +964,13 @@ export default function Home({}: HomeProps) {
                             </svg>
                           </div>
                           <h3 className="text-white text-md font-medium break-words ps-2">
-                            ERC-20
+                            Let users pay themselves using any ERC-20 tokens
                           </h3>
                         </div>
                         <p className="text-zinc-400 text-sm flex-grow break-words mb-4">
-                          Allow your users to pay for transaction gas fees with
-                          ERC-20 tokens.
+                          Allow your users to pay for gas fees with any tokens
+                          straight from their EOA using Gelato's ERC-20
+                          Paymaster.
                         </p>
                         <div className="w-full mt-auto">
                           {!showTokenSelection ? (
@@ -978,7 +991,19 @@ export default function Home({}: HomeProps) {
                                 gasPaymentMethod === "erc20" ? (
                                 "Processing..."
                               ) : (
-                                "Borrow USDC"
+                                <div className="flex items-center justify-center gap-1">
+                                  <div className="w-6 h-6 flex items-center justify-center">
+                                    <Image
+                                      src="/morpho-logo.png"
+                                      alt="Morpho"
+                                      width={30}
+                                      height={30}
+                                      className="w-6 h-6"
+                                      priority
+                                    />
+                                  </div>
+                                  Borrow USDC with Morpho
+                                </div>
                               )}
                             </button>
                           ) : (
@@ -1017,14 +1042,16 @@ export default function Home({}: HomeProps) {
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="w-6 h-6 bg-[#2775CA]/10 rounded-full flex items-center justify-center">
-                                      <Image
-                                        src="/usdc.svg"
-                                        alt="USDC"
-                                        width={16}
-                                        height={16}
-                                        className="w-4 h-4"
-                                      />
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-6 h-6 bg-[#2775CA]/10 rounded-full flex items-center justify-center">
+                                        <Image
+                                          src="/usdc.svg"
+                                          alt="USDC"
+                                          width={16}
+                                          height={16}
+                                          className="w-4 h-4"
+                                        />
+                                      </div>
                                     </div>
                                     Use USDC
                                   </>

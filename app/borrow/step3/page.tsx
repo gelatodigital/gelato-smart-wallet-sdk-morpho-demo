@@ -25,7 +25,7 @@ import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import Image from "next/image";
 let CHAIN = chainConfig;
-const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
+const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
 
 function Step3Inner() {
   const router = useRouter();
@@ -56,7 +56,9 @@ function Step3Inner() {
   };
   const calculateRequiredSupply = async (usdcAmount: string) => {
     try {
-      const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+      const provider = new JsonRpcProvider(
+        process.env.NEXT_PUBLIC_MORPHO_RPC_URL
+      );
       const oracleContract = new Contract(
         marketParams.oracle,
         oracleABI,

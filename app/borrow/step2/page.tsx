@@ -83,7 +83,9 @@ export default function Step2() {
 
   const calculateRequiredSupply = async (usdcAmount: string) => {
     try {
-      const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+      const provider = new JsonRpcProvider(
+        process.env.NEXT_PUBLIC_MORPHO_RPC_URL
+      );
       const oracleContract = new Contract(
         marketParams.oracle,
         oracleABI,

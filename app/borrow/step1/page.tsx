@@ -29,7 +29,7 @@ import {
 import { toast } from "sonner";
 
 let CHAIN = chainConfig;
-const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
+const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
 
 export default function Step1() {
   const router = useRouter();

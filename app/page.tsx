@@ -18,8 +18,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
 
 let CHAIN = chainConfig;
-const GELATO_API_KEY = process.env.NEXT_PUBLIC_GELATO_API_KEY!;
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
+const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_MORPHO_RPC_URL);
 
 // Create a memoized deployment check function
 const checkIsDeployed = async (address: string) => {

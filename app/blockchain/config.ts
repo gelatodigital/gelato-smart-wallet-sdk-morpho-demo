@@ -46,7 +46,8 @@ export const chainConfig = baseSepolia;
 export const usdcAddress = "0x87c25229AFBC30418D0144e8Dfb2bcf8eFd92c6c";
 export const wethAddress = "0xeF3aE97Cf3a8D1f4660A7458d9E9a255c6E7535b";
 
-const ZERODEV_PROJECT_ID = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID as string;
+const ZERODEV_PROJECT_ID = process.env
+  .NEXT_PUBLIC_MORPHO_ZERODEV_PROJECT_ID as string;
 
 export const TOKEN_CONFIG = {
   USDC: {

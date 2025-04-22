@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import Image from "next/image";
+
 let CHAIN = chainConfig;
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
 

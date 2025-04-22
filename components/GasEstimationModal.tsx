@@ -320,7 +320,7 @@ export function GasEstimationModal({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-zinc-400">Token Address:</span>
                 <a
-                  href={`https://eth-sepolia.blockscout.com/token/${TOKEN_CONFIG[gasToken].address}`}
+                  href={`https://base-sepolia.blockscout.com/token/${TOKEN_CONFIG[gasToken].address}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
@@ -333,7 +333,7 @@ export function GasEstimationModal({
 
               <div className="pt-2">
                 <a
-                  href={`https://eth-sepolia.blockscout.com/address/${TOKEN_CONFIG[gasToken].address}`}
+                  href={`https://base-sepolia.blockscout.com/address/${TOKEN_CONFIG[gasToken].address}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"

@@ -1,6 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { defineChain } from "viem";
-import { sepolia } from "viem/chains";
+import { baseSepolia, sepolia } from "viem/chains";
 import { http, createConfig } from "wagmi";
 import { FaEthereum, FaBitcoin } from "react-icons/fa";
 import { HiOutlineCurrencyDollar } from "react-icons/hi";
@@ -42,9 +42,9 @@ export const wagmiConfig = createConfig({
 export const client = wagmiConfig.getClient();
 export type Client = typeof client;
 
-export const chainConfig = sepolia;
-export const usdcAddress = "0xC85Ff3333e0F92ABBf8B187a9b3015e01a966346";
-export const wethAddress = "0x2335b1CDB8E52E2780acC8b94c90Fed6dB9FF301";
+export const chainConfig = baseSepolia;
+export const usdcAddress = "0x87c25229AFBC30418D0144e8Dfb2bcf8eFd92c6c";
+export const wethAddress = "0xeF3aE97Cf3a8D1f4660A7458d9E9a255c6E7535b";
 
 const ZERODEV_PROJECT_ID = process.env.NEXT_PUBLIC_ZERODEV_PROJECT_ID as string;
 
@@ -87,13 +87,13 @@ export const TOKEN_CONFIG = {
 };
 
 export const marketParams = {
-  collateralToken: "0xF87076a9c27B4ab5F0371be6FCF29d45CE236c89",
-  loanToken: "0xC85Ff3333e0F92ABBf8B187a9b3015e01a966346",
-  oracle: "0x61596fD9a63a9F25F0f19294C71bC8102a8f7E21",
-  irm: "0x8C5dDCD3F601c91D1BF51c8ec26066010ACAbA7c",
+  collateralToken: "0x63cc3c2b5B5881000aC7615D3aB0551CE30C72D8",
+  loanToken: "0x87c25229AFBC30418D0144e8Dfb2bcf8eFd92c6c",
+  oracle: "0xA07CA1755545F5C3BC73bE889937fAa4A637D634",
+  irm: "0x46415998764C29aB2a25CbeA6254146D50D22687",
   lltv: BigInt(860000000000000000), // 86% LLTV
 };
-export const morphoAddress = "0xd011EE229E7459ba1ddd22631eF7bF528d424A14";
+export const morphoAddress = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
 export const morphoABI = [
   {

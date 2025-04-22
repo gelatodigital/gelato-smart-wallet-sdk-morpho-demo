@@ -69,10 +69,7 @@ export default function WalletCard({
   }, [accountAddress]);
 
   const handleExplorerClick = () => {
-    window.open(
-      `https://scope.sh/11155111/address/${accountAddress}`,
-      "_blank"
-    );
+    window.open(`https://scope.sh/84532/address/${accountAddress}`, "_blank");
   };
 
   const getExplorerLink = (address: string) => {

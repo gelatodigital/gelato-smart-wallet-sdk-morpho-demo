@@ -1,12 +1,17 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 import bowser from "bowser";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-const PASSKEYS_ALLOWED_MAP = [bowser.OS_MAP.iOS, bowser.OS_MAP.MacOS, bowser.OS_MAP.Android, bowser.OS_MAP.Windows];
+const PASSKEYS_ALLOWED_MAP = [
+  bowser.OS_MAP.iOS,
+  bowser.OS_MAP.MacOS,
+  bowser.OS_MAP.Android,
+  bowser.OS_MAP.Windows,
+];
 
 const getWindowsVersion = (osVersion: string) => {
   const windowsVersionRegex = /NT (\d+\.\d+)/;
@@ -36,7 +41,11 @@ const checkIfOSIsSupported = (osName: string, osVersion: string) => {
   }
 };
 
-export function shouldSupportPasskey(): { isBrowserSupported: boolean; isOsSupported: boolean; supportedBrowser?: Record<string, string> } {
+export function shouldSupportPasskey(): {
+  isBrowserSupported: boolean;
+  isOsSupported: boolean;
+  supportedBrowser?: Record<string, string>;
+} {
   const browser = bowser.getParser(navigator.userAgent);
   const osDetails = browser.parseOS();
   if (!osDetails) return { isBrowserSupported: false, isOsSupported: false };
@@ -62,9 +71,16 @@ export function shouldSupportPasskey(): { isBrowserSupported: boolean; isOsSuppo
     },
   };
   const isBrowserSupported = browser.satisfies({ ...browserData }) || false;
-  return { isBrowserSupported, isOsSupported: true, supportedBrowser: browserData[osName] };
+  return {
+    isBrowserSupported,
+    isOsSupported: true,
+    supportedBrowser: browserData[osName],
+  };
 }
 
 export function browserSupportsWebAuthn() {
-  return window?.PublicKeyCredential !== undefined && typeof window.PublicKeyCredential === "function";
+  return (
+    window?.PublicKeyCredential !== undefined &&
+    typeof window.PublicKeyCredential === "function"
+  );
 }

@@ -10,6 +10,8 @@ import {
   ZeroDevSmartWalletConnectors,
   isZeroDevConnector,
 } from "@dynamic-labs/ethereum-aa";
+import { Toaster } from "sonner";
+
 const queryClient = new QueryClient();
 
 export default function Providers({ children }: { children: React.ReactNode }) {
@@ -23,7 +25,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         ],
       }}
     >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <Toaster />
+      </QueryClientProvider>
     </DynamicContextProvider>
   );
 }

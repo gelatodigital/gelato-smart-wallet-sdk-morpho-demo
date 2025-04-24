@@ -1,11 +1,10 @@
 # EIP 7702 Integration with AA powered by Gelato
 
-A Next.js application demonstrating the integration of EIP 7702 (Account Abstraction) using Gelato's infrastructure. This project showcases how to use EOAs as smart contract wallets with advanced features like gasless transactions and paying gas with ERC20 tokens.
+A Next.js application demonstrating the integration of EIP 7702 (Account Abstraction) using Gelato's infrastructure. This project showcases how to use EOAs as smart contract wallets with advanced features like gasless transactions to borrow loan(USDC) from Morpho market .
 
 ## Features
 
 - Sponsored transactions using Gelato Bundler via 1Balance
-- Paying gas with ERC20 tokens (e.g., USDC, WETH) with accurate gas estimations
 
 ## Prerequisites
 
@@ -13,8 +12,7 @@ A Next.js application demonstrating the integration of EIP 7702 (Account Abstrac
 - Yarn package manager
 - A Gelato API key
 - A Dynamic Environment ID
-- A ZeroDev project ID
-- An RPC URL for your target network (Sepolia)
+- An RPC URL for your target network (Base Sepolia)
 
 ## Installation
 
@@ -28,7 +26,7 @@ cd eip7702-next-demo
 2. Checkout to 7702 Branch:
 
 ```bash
-git checkout gelato-7702
+git checkout gelato-morpho-7702
 ```
 
 3. Install dependencies:
@@ -42,7 +40,7 @@ yarn install
    - Copy `.env.local.example` to `.env.local`
    - Fill in the required environment variables
 
-Note:- Currently the demo is configured to ethereum sepolia
+Note:- Currently the demo is configured to base sepolia
 
 ```env
 NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id

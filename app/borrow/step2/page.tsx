@@ -3,7 +3,7 @@
 import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bitcoin, CircleDollarSign } from "lucide-react";
+import { Bitcoin, CircleDollarSign, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
@@ -38,27 +38,24 @@ export default function Step2() {
   const accountAddress = primaryWallet?.address;
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
+  const [isProceeding, setIsProceeding] = useState(false);
 
   const handleUsdcChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/[^0-9.]/g, "");
 
-    // Remove leading zeros
     if (value.startsWith("0") && value.length > 1 && !value.startsWith("0.")) {
       value = value.replace(/^0+/, "");
     }
 
-    // Handle empty input
     if (!value) {
       value = "0";
     }
 
-    // Prevent multiple decimal points
     const decimalCount = (value.match(/\./g) || []).length;
     if (decimalCount > 1) {
       return;
     }
 
-    // Limit decimal places to 2
     if (value.includes(".")) {
       const [whole, decimal] = value.split(".");
       if (decimal?.length > 2) {
@@ -67,7 +64,6 @@ export default function Step2() {
     }
     setUsdcAmount(value);
 
-    // Only calculate if value is not 0
     if (value !== "0") {
       setIsCalculating(true);
       const requiredBtc = await calculateRequiredSupply(value);
@@ -104,15 +100,21 @@ export default function Step2() {
     }
   };
 
-  const handleBorrow = () => {
-    router.push(`/borrow/step3?amount=${usdcAmount}`);
+  const handleBorrow = async () => {
+    setIsProceeding(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await router.push(`/borrow/step3?amount=${usdcAmount}`);
+    } finally {
+      setIsProceeding(false);
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header showBackButton />
 
-      <main className="flex-1 container mx-auto px-4 py-8 mt-8">
+      <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">
             <div className="rounded-[24px] border bg-white p-8">
@@ -141,16 +143,27 @@ export default function Step2() {
                     Required collateral:
                   </span>
                   <div className="flex items-center">
-                    <span className="text-[18px] font-normal">
-                      {requiredBtc}
-                    </span>
-                    <Image
-                      src="/bitcoin.svg"
-                      alt="cbBTC"
-                      width={24}
-                      height={24}
-                      className="ml-2"
-                    />
+                    {isCalculating ? (
+                      <div className="flex items-center">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        <span className="text-[18px] font-normal">
+                          Calculating...
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-[18px] font-normal">
+                          {requiredBtc}
+                        </span>
+                        <Image
+                          src="/bitcoin.svg"
+                          alt="cbBTC"
+                          width={24}
+                          height={24}
+                          className="ml-2"
+                        />
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -206,10 +219,17 @@ export default function Step2() {
 
           <Button
             onClick={handleBorrow}
-            disabled={usdcAmount === "0"}
+            disabled={usdcAmount === "0" || isProceeding}
             className="w-full bg-black hover:bg-gray-800 h-14 text-white text-[18px] rounded-2xl"
           >
-            Borrow
+            {isProceeding ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Proceeding...
+              </>
+            ) : (
+              "Borrow"
+            )}
           </Button>
         </div>
       </main>

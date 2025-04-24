@@ -44,20 +44,21 @@ function HeaderInner({ showBackButton = false }: HeaderProps) {
           <div className="flex items-center">
             <div className="flex items-center mr-1">
               <Image
-                src="/gelato-logo.png"
+                src="/gelato.png"
                 alt="Gelato"
-                width={80}
-                height={80}
-                className="mr-1 invert"
+                width={23}
+                height={23}
+                className="mr-1.5"
               />
+              <span className="font-semibold text-xl">Gelato</span>
             </div>
             <span className="text-gray-300 mx-2">|</span>
             <div className="flex items-center">
               <Image
                 src="/morpho-logo.png"
                 alt="Morpho"
-                width={26}
-                height={26}
+                width={28}
+                height={28}
                 className="mr-1"
               />
               <span className="font-semibold text-lg">Morpho</span>

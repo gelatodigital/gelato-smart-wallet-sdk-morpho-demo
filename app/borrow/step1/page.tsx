@@ -27,6 +27,7 @@ import {
   getUserOperationGasPrice,
 } from "@zerodev/sdk";
 import { toast } from "sonner";
+import { useActivityLog } from "@/contexts/ActivityLogContext";
 
 let CHAIN = chainConfig;
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
@@ -36,6 +37,8 @@ export default function Step1() {
   const { primaryWallet, handleLogOut } = useDynamicContext();
   const [isCopied, setIsCopied] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
+  const { addLog } = useActivityLog();
+  const [isProceeding, setIsProceeding] = useState(false);
 
   const accountAddress = primaryWallet?.address;
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
@@ -56,7 +59,7 @@ export default function Step1() {
   };
 
   const handleLogout = async () => {
-    await handleLogOut();
+    handleLogOut();
     router.push("/");
   };
 
@@ -123,6 +126,17 @@ export default function Step1() {
 
       toast.success("Tokens claimed successfully!");
 
+      // Add log entry
+      addLog({
+        message: "Minted 1 cbBTC",
+        timestamp: new Date().toISOString(),
+        details: {
+          userOpHash,
+          txHash,
+          isSponsored: true,
+        },
+      });
+
       // Refresh token holdings after successful transaction
       if (accountAddress) {
         refetchTokenHoldings();
@@ -135,8 +149,14 @@ export default function Step1() {
     }
   };
 
-  const handleProceed = () => {
-    router.push("/borrow/step2");
+  const handleProceed = async () => {
+    setIsProceeding(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      await router.push("/borrow/step2");
+    } finally {
+      setIsProceeding(false);
+    }
   };
 
   return (
@@ -197,8 +217,16 @@ export default function Step1() {
           <Button
             onClick={handleProceed}
             className="w-full md:w-auto bg-black hover:bg-gray-800 px-8 py-2 text-white"
+            disabled={isProceeding}
           >
-            Borrow now
+            {isProceeding ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Proceeding...
+              </>
+            ) : (
+              "Borrow now"
+            )}
           </Button>
         </div>
 
@@ -257,11 +285,14 @@ export default function Step1() {
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Smart EOA</span>
                 <div className="flex items-center text-green-500">
                   <Check className="mr-1 h-4 w-4" />
                   <span>Smart EOA</span>
                 </div>
+                <span className="text-gray-600">
+                  Powered by{" "}
+                  <span className="font-semibold text-[#FF3B57]">Gelato</span>
+                </span>
               </div>
             </CardContent>
           </Card>

@@ -1,50 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
-import { defineChain } from "viem";
-import { baseSepolia, sepolia } from "viem/chains";
-import { http, createConfig } from "wagmi";
-import { FaEthereum, FaBitcoin } from "react-icons/fa";
+import { baseSepolia } from "viem/chains";
 import { HiOutlineCurrencyDollar } from "react-icons/hi";
-
-export const queryClient = new QueryClient();
-export const chess = defineChain({
-  id: 123420000962,
-  network: "chess",
-  name: "Chess",
-  nativeCurrency: {
-    name: "ETH",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    public: {
-      http: ["https://rpc.chess.t.raas.gelato.cloud"],
-    },
-    default: {
-      http: ["https://rpc.chess.t.raas.gelato.cloud"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Block Scout",
-      url: "https://chess.cloud.blockscout.com/",
-    },
-  },
-  contracts: {},
-  testnet: true,
-});
-export const wagmiConfig = createConfig({
-  chains: [chess],
-  pollingInterval: 1000,
-  transports: {
-    [chess.id]: http(),
-  },
-});
-export const client = wagmiConfig.getClient();
-export type Client = typeof client;
 
 export const chainConfig = baseSepolia;
 export const usdcAddress = "0x87c25229AFBC30418D0144e8Dfb2bcf8eFd92c6c";
-export const wethAddress = "0xeF3aE97Cf3a8D1f4660A7458d9E9a255c6E7535b";
 
 const ZERODEV_PROJECT_ID = process.env
   .NEXT_PUBLIC_MORPHO_ZERODEV_PROJECT_ID as string;
@@ -57,34 +15,6 @@ export const TOKEN_CONFIG = {
     icon: HiOutlineCurrencyDollar,
     paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
   },
-  WETH: {
-    address: wethAddress,
-    symbol: "WETH",
-    decimals: 18,
-    icon: FaEthereum,
-    paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
-  },
-  // DAI: {
-  //   address: DaiAddress,
-  //   symbol: "DAI",
-  //   decimals: 18,
-  //   icon: HiOutlineCurrencyDollar,
-  //   paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
-  // },
-  // WBTC: {
-  //   address: wbtcAddress,
-  //   symbol: "WBTC",
-  //   decimals: 18,
-  //   icon: FaBitcoin,
-  //   paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
-  // },
-  // USDT: {
-  //   address: usdtAddress,
-  //   symbol: "USDT",
-  //   decimals: 18,
-  //   icon: HiOutlineCurrencyDollar,
-  //   paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
-  // },
 };
 
 export const marketParams = {

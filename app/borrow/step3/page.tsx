@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import Image from "next/image";
+import { useActivityLog } from "@/contexts/ActivityLogContext";
 
 let CHAIN = chainConfig;
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
@@ -39,6 +40,7 @@ function Step3Inner() {
   const { primaryWallet } = useDynamicContext();
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(primaryWallet?.address as Address);
+  const { addLog } = useActivityLog();
 
   useEffect(() => {
     const amount = searchParams.get("amount");
@@ -47,14 +49,13 @@ function Step3Inner() {
         setUsdcAmount(amount);
         const requiredBtc = await calculateRequiredSupply(amount);
         setRequiredBtc(requiredBtc?.toFixed(8) || "0");
+      } else {
+        router.push("/borrow/step2");
       }
     };
     calculateSupply();
   }, []);
 
-  const handleBorrow = () => {
-    setIsModalOpen(true);
-  };
   const calculateRequiredSupply = async (usdcAmount: string) => {
     try {
       const provider = new JsonRpcProvider(
@@ -197,6 +198,17 @@ function Step3Inner() {
       toast.success("Borrow Tokens successful!");
       setTxStatus("success");
 
+      // Add log entry
+      addLog({
+        message: `Borrowed ${usdcAmount} USDC with ${requiredBtc} cbBTC as collateral`,
+        timestamp: new Date().toISOString(),
+        details: {
+          userOpHash,
+          txHash,
+          isSponsored: true,
+        },
+      });
+
       // Refresh token holdings after successful transaction
       if (primaryWallet?.address) {
         refetchTokenHoldings();
@@ -212,7 +224,7 @@ function Step3Inner() {
     <div className="flex min-h-screen flex-col">
       <Header showBackButton />
 
-      <main className="flex-1 container mx-auto p-8 mt-8">
+      <main className="flex-1 container mx-auto p-8">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">
             <div className="rounded-lg border p-8 shadow-sm">

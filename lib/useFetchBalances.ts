@@ -14,7 +14,6 @@ const publicClient = createPublicClient({
 
 interface TokenHoldingsResponse {
   ethBalance: string;
-  wethBalance: string;
   cbBTCBalance: string;
   loanTokenBalance: string;
 }
@@ -23,22 +22,6 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
   try {
     // Fetch native ETH balance
     const ethBalance = await publicClient.getBalance({ address });
-
-    // Fetch WETH balance
-    const wethBalance = await publicClient.readContract({
-      address: TOKEN_CONFIG.WETH.address as `0x${string}`,
-      abi: [
-        {
-          name: "balanceOf",
-          type: "function",
-          stateMutability: "view",
-          inputs: [{ name: "account", type: "address" }],
-          outputs: [{ name: "balance", type: "uint256" }],
-        },
-      ],
-      functionName: "balanceOf",
-      args: [address],
-    });
 
     // Fetch cbBTC balance
     const cbBTCBalance = await publicClient.readContract({
@@ -74,10 +57,6 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
 
     return {
       ethBalance: formatEther(ethBalance),
-      wethBalance: formatUnits(
-        wethBalance as bigint,
-        TOKEN_CONFIG.WETH.decimals
-      ),
       cbBTCBalance: formatUnits(cbBTCBalance as bigint, 8), // Assuming 18 decimals for cbBTC
       loanTokenBalance: formatUnits(
         loanTokenBalance as bigint,
@@ -88,7 +67,6 @@ async function fetchBalances(address: Address): Promise<TokenHoldingsResponse> {
     console.error("Error fetching token balances:", error);
     return {
       ethBalance: "0",
-      wethBalance: "0",
       cbBTCBalance: "0",
       loanTokenBalance: "0",
     };
@@ -100,6 +78,5 @@ export function useTokenHoldings(address: Address | undefined) {
     queryKey: ["tokenHoldings", address],
     queryFn: () => fetchBalances(address!),
     enabled: !!address,
-    refetchInterval: 5000, // Refetch every 5 seconds
   });
 }

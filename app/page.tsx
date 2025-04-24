@@ -7,7 +7,6 @@ import {
   getUserOperationGasPrice,
 } from "@zerodev/sdk";
 import { http } from "wagmi";
-import { JsonRpcProvider } from "ethers";
 import { chainConfig } from "./blockchain/config";
 import { toast } from "sonner";
 import { useDynamicContext, DynamicWidget } from "@dynamic-labs/sdk-react-core";
@@ -19,18 +18,6 @@ import { ArrowRight, Loader2 } from "lucide-react";
 
 let CHAIN = chainConfig;
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
-const provider = new JsonRpcProvider(process.env.NEXT_PUBLIC_MORPHO_RPC_URL);
-
-// Create a memoized deployment check function
-const checkIsDeployed = async (address: string) => {
-  try {
-    const code = await provider.getCode(address);
-    return code !== "0x";
-  } catch (error) {
-    console.error("Error checking deployment status:", error);
-    return false;
-  }
-};
 
 export default function Home() {
   const router = useRouter();
@@ -60,8 +47,6 @@ export default function Home() {
         },
       },
     });
-
-    checkIsDeployed(kernelClient.account.address);
     return kernelClient;
   };
 

@@ -10,6 +10,7 @@ interface TransactionModalProps {
   amount: string;
   requiredBtc: string;
   status: "loading" | "success" | null;
+  transactionType: string;
 }
 
 export default function TransactionModal({
@@ -18,6 +19,7 @@ export default function TransactionModal({
   amount,
   requiredBtc,
   status,
+  transactionType,
 }: TransactionModalProps) {
   const router = useRouter();
 
@@ -49,8 +51,22 @@ export default function TransactionModal({
                 Transaction Successful!
               </h2>
               <p className="text-gray-600 mb-6">
-                Your loan has been successfully processed. You have borrowed{" "}
-                {amount} USDC using {requiredBtc} BTC as collateral.
+                {transactionType === "borrow" ? (
+                  <>
+                    Your loan has been successfully processed. You have borrowed{" "}
+                    {amount} USDC using {requiredBtc} BTC as collateral.
+                  </>
+                ) : transactionType === "supply" ? (
+                  <>
+                    Your deposit has been successfully processed. You have
+                    supplied {amount} USDC to earn interest.
+                  </>
+                ) : (
+                  <>
+                    Your withdrawal has been successfully processed. You have
+                    withdrawn {amount} USDC.
+                  </>
+                )}
               </p>
               <Button
                 onClick={onClose}

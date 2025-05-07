@@ -1,86 +1,65 @@
 "use client";
 
-import React from "react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import Header from "@/components/Header";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Contract } from "ethers";
-import { marketParams, oracleABI } from "@/app/blockchain/config";
-import { JsonRpcProvider } from "ethers";
-import { Address } from "viem";
-import { useTokenHoldings } from "@/lib/useFetchBalances";
+import { Bitcoin, CircleDollarSign, ArrowRight } from "lucide-react";
+import Header from "@/components/Header";
+import TransactionModal from "@/components/TransactionModal";
+import { Contract, JsonRpcProvider } from "ethers";
+import { marketParams, morphoAddress } from "@/app/blockchain/config";
+import { morphoABI } from "@/app/blockchain/abi/morphoABI";
+import { oracleABI } from "@/app/blockchain/abi/oracleABI";
+import { tokenABI } from "@/app/blockchain/abi/ERC20ABI";
+import { Address, encodeFunctionData, http } from "viem";
+import { toast } from "sonner";
 import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
+import { useTokenHoldings } from "@/lib/useFetchBalances";
 import Image from "next/image";
+import { useActivityLog } from "@/contexts/ActivityLogContext";
+import { sponsored } from "@gelatonetwork/smartwallet";
 
-// Custom Input component
-const Input = React.forwardRef<
-  HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement>
->(({ className, ...props }, ref) => {
-  return (
-    <input
-      className={`w-full bg-transparent text-[160px] font-normal text-center focus:outline-none ${className}`}
-      ref={ref}
-      {...props}
-    />
-  );
-});
-Input.displayName = "Input";
+const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
 
-export default function Step2() {
+function Step2Inner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [usdcAmount, setUsdcAmount] = useState("0");
   const [requiredBtc, setRequiredBtc] = useState("0");
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [totalBtc, setTotalBtc] = useState("0");
+  const [btcPrice, setBtcPrice] = useState("0");
+  const [apr, setApr] = useState("0");
+  const [txStatus, setTxStatus] = useState<"loading" | "success" | null>(null);
   const {
     gelato: { client },
   } = useGelatoSmartWalletProviderContext();
   const accountAddress = client?.account.address;
-
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
-  const [isProceeding, setIsProceeding] = useState(false);
+  const { addLog } = useActivityLog();
 
-  const handleUsdcChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/[^0-9.]/g, "");
-
-    if (value.startsWith("0") && value.length > 1 && !value.startsWith("0.")) {
-      value = value.replace(/^0+/, "");
-    }
-
-    if (!value) {
-      value = "0";
-    }
-
-    const decimalCount = (value.match(/\./g) || []).length;
-    if (decimalCount > 1) {
-      return;
-    }
-
-    if (value.includes(".")) {
-      const [whole, decimal] = value.split(".");
-      if (decimal?.length > 2) {
-        value = `${whole}.${decimal.slice(0, 2)}`;
+  useEffect(() => {
+    const amount = searchParams.get("amount");
+    const apr = searchParams.get("apr");
+    const calculateSupply = async () => {
+      if (amount) {
+        setUsdcAmount(amount);
+        if (apr) {
+          setApr(apr);
+        }
+        const requiredBtc = await calculateRequiredSupply(amount);
+        const totalBtc = await calculateTotalBtc(amount);
+        setRequiredBtc(requiredBtc?.toFixed(8) || "0");
+        setTotalBtc(totalBtc?.toFixed(8) || "0");
+      } else {
+        router.push("/borrow/step1");
       }
-    }
-    setUsdcAmount(value);
+    };
+    calculateSupply();
+  }, []);
 
-    if (value !== "0") {
-      setIsCalculating(true);
-      const requiredBtc = await calculateRequiredSupply(value);
-      setRequiredBtc(requiredBtc || "0");
-      setIsCalculating(false);
-    } else {
-      setRequiredBtc("0");
-    }
-  };
-
-  // Format display value
-  const displayValue = usdcAmount === "0" ? "0" : usdcAmount.replace(/^0+/, "");
-
-  const calculateRequiredSupply = async (usdcAmount: string) => {
+  const getBtcPrice = async () => {
     try {
       const provider = new JsonRpcProvider(
         process.env.NEXT_PUBLIC_MORPHO_RPC_URL
@@ -94,148 +73,280 @@ export default function Step2() {
 
       // Format price with 2 decimal places
       const formattedPrice = (Number(price) / 1e8).toFixed(2);
+      setBtcPrice(formattedPrice);
 
-      // Calculate required BTC amount based on borrow amount and price
-      const requiredBTCAmount = (Number(usdcAmount) / Number(price)) * 1e8; // Convert price from 8 decimals
-      return requiredBTCAmount.toFixed(8);
+      return price;
     } catch (error) {
       console.error("Error calculating required supply:", error);
     }
   };
-
-  const handleBorrow = async () => {
-    setIsProceeding(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      await router.push(`/borrow/step3?amount=${usdcAmount}`);
-    } finally {
-      setIsProceeding(false);
-    }
+  const calculateTotalBtc = async (usdcAmount: string) => {
+    const price = await getBtcPrice();
+    const usdc = Number(usdcAmount) / 0.945;
+    const requiredBTCAmount = (Number(usdc) / Number(price)) * 1e8; // Convert price from 8 decimals
+    setTotalBtc(requiredBTCAmount.toFixed(8));
+    return requiredBTCAmount;
   };
 
+  const calculateRequiredSupply = async (usdcAmount: string) => {
+    const price = await getBtcPrice();
+    // Calculate required BTC amount based on borrow amount and price
+    const requiredBTCAmount = (Number(usdcAmount) / Number(price)) * 1e8; // Convert price from 8 decimals
+    return requiredBTCAmount;
+  };
+
+  const supplyAndBorrow = async () => {
+    try {
+      setIsModalOpen(true);
+      setTxStatus("loading");
+      // Convert input amounts to proper decimal format
+      // 8 decimals for cbBTC
+      const borrowAmountInDecimals = BigInt(
+        Math.floor(parseFloat(usdcAmount) * 1000000)
+      ); // 6 decimals for USDC
+
+      const requiredBTCAmount = await calculateTotalBtc(usdcAmount); // Convert price from 8 decimals
+      const supplyAmountInDecimals = BigInt(
+        Math.floor(parseFloat(requiredBTCAmount?.toString() || "0") * 100000000)
+      );
+
+      if (
+        Number(tokenHoldings?.cbBTCBalance as string) <
+        Number(requiredBTCAmount)
+      ) {
+        toast.error("Insufficient collateral balance, Mint Now !!");
+        setIsModalOpen(false);
+        setTxStatus(null);
+        return;
+      }
+
+      const supplyData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "supplyCollateral",
+        args: [
+          marketParams,
+          supplyAmountInDecimals,
+          client?.account.address,
+          "0x",
+        ],
+      });
+
+      const borrowData = encodeFunctionData({
+        abi: morphoABI,
+        functionName: "borrow",
+        args: [
+          marketParams,
+          borrowAmountInDecimals,
+          BigInt(0),
+          client?.account.address,
+          client?.account.address,
+        ],
+      });
+
+      const calls = [
+        // Add approval call for collateral token
+        {
+          to: marketParams.collateralToken as `0x${string}`,
+          data: encodeFunctionData({
+            abi: tokenABI,
+            functionName: "approve",
+            args: [morphoAddress, supplyAmountInDecimals],
+          }),
+        },
+        {
+          to: morphoAddress as `0x${string}`,
+          data: supplyData,
+        },
+        {
+          to: morphoAddress as `0x${string}`,
+          data: borrowData,
+        },
+      ];
+
+      const smartWalletResponse = await client?.execute({
+        payment: sponsored(GELATO_API_KEY),
+        calls,
+      });
+
+      const userOpHash = smartWalletResponse?.id;
+
+      console.log(userOpHash);
+
+      const txHash = await smartWalletResponse?.wait();
+
+      if (!txHash) {
+        toast.error("Transaction failed");
+        setIsModalOpen(false);
+        setTxStatus(null);
+        return;
+      }
+
+      toast.success("Borrow Tokens successful!");
+      setTxStatus("success");
+
+      // Add log entry
+      addLog({
+        message: `Borrowed ${usdcAmount} USDC with ${requiredBtc} cbBTC as collateral`,
+        timestamp: new Date().toISOString(),
+        details: {
+          userOpHash,
+          txHash,
+          isSponsored: true,
+        },
+      });
+
+      // Refresh token holdings after successful transaction
+      if (accountAddress) {
+        refetchTokenHoldings();
+      }
+    } catch (error: any) {
+      console.log(error);
+      toast.error(`Error in supply and borrow. Check the logs`);
+      setIsModalOpen(false);
+      setTxStatus(null);
+    }
+  };
   return (
     <div className="flex min-h-screen flex-col">
       <Header showBackButton />
 
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto p-8">
         <div className="mx-auto max-w-2xl">
           <div className="mb-8">
-            <div className="rounded-[24px] border bg-white p-8">
-              <div className="mb-16">
-                <div className="flex items-center justify-between">
-                  <Input
-                    className="text-[95px] text-black min-w-0 p-0"
-                    value={displayValue}
-                    onChange={handleUsdcChange}
-                    type="text"
-                    inputMode="decimal"
-                    style={{
-                      WebkitAppearance: "none",
-                      MozAppearance: "textfield",
-                    }}
-                  />
-                  <span className="text-[80px] text-gray-400 font-normal">
-                    USDC
-                  </span>
+            <div className="rounded-lg border p-8 shadow-sm">
+              <div className="text-center mb-8">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Image
+                      src="/bitcoin.svg"
+                      alt="cbBTC"
+                      width={24}
+                      height={24}
+                    />
+                  </div>
+                  <ArrowRight className="h-6 w-6 mx-2 text-gray-400" />
+                  <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Image src="/usdc.svg" alt="USDC" width={24} height={24} />
+                  </div>
                 </div>
+                <h2 className="text-2xl font-bold">Borrow {usdcAmount} USDC</h2>
+                <p className="text-gray-600">with cbBTC as collateral</p>
               </div>
 
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <span className="text-[18px] text-gray-600">
-                    Required collateral:
-                  </span>
-                  <div className="flex items-center">
-                    {isCalculating ? (
-                      <div className="flex items-center">
-                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                        <span className="text-[18px] font-normal">
-                          Calculating...
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-[18px] font-normal">
-                          {requiredBtc}
-                        </span>
-                        <Image
-                          src="/bitcoin.svg"
-                          alt="cbBTC"
-                          width={24}
-                          height={24}
-                          className="ml-2"
-                        />
-                      </>
-                    )}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center space-x-1">
+                    <span>Collateral</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{requiredBtc}</span>
+                    <Image
+                      src="/bitcoin.svg"
+                      alt="cbBTC"
+                      width={16}
+                      height={16}
+                    />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <span className="text-[18px] text-gray-600">
-                    Loan-to-Value (LTV):
-                  </span>
-                  <span className="text-[18px] font-normal">86%</span>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center space-x-1">
+                    <span>Loan-to-Value</span>
+                  </div>
+                  <span className="font-medium">94.5%</span>
                 </div>
 
-                <div className="space-y-4 pt-4">
-                  <div className="flex items-center justify-between border-t py-4">
-                    <div className="flex items-center gap-3">
-                      <Image
-                        src="/usdc.svg"
-                        alt="USDC"
-                        width={24}
-                        height={24}
-                      />
-                      <span className="text-[18px]">Borrow USDC</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[18px]">3.75%</span>
-                      <span className="text-[16px] text-gray-500">
-                        Variable APR
-                      </span>
-                    </div>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center space-x-1">
+                    <span>APR</span>
                   </div>
+                  <span className="font-medium">{apr}%</span>
+                </div>
 
-                  <div className="flex items-center justify-between border-t py-4">
-                    <div className="flex items-center gap-3">
-                      <Image
-                        src="/bitcoin.svg"
-                        alt="cbBTC"
-                        width={24}
-                        height={24}
-                      />
-                      <span className="text-[18px]">Collateralize cbBTC</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[18px]">
-                        {tokenHoldings?.cbBTCBalance}
-                      </span>
-                      <span className="text-[16px] text-gray-500">
-                        Available
-                      </span>
-                    </div>
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center space-x-1">
+                    <span>Liquidation price</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">
+                      {" "}
+                      {(Number(btcPrice) * 0.945).toFixed(2)}
+                    </span>
+                    <Image src="/usdc.svg" alt="USDC" width={16} height={16} />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center space-x-1">
+                    <span>Receive time</span>
+                  </div>
+                  <span className="font-medium">~7 seconds</span>
+                </div>
+
+                <div className="flex items-center justify-between py-2 border-b">
+                  <div className="flex items-center space-x-1">
+                    <span>Transaction fee</span>
+                  </div>
+                  <span className="font-medium text-green-600 font-bold">
+                    $0 (FREE)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-4">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-lg font-semibold">
+                      cbBTC deposit total
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-xl font-bold">
+                      {totalBtc}
+                    </span>
+                    <Image
+                      src="/bitcoin.svg"
+                      alt="cbBTC"
+                      width={20}
+                      height={20}
+                    />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <Button
-            onClick={handleBorrow}
-            disabled={usdcAmount === "0" || isProceeding}
-            className="w-full bg-black hover:bg-gray-800 h-14 text-white text-[18px] rounded-2xl"
-          >
-            {isProceeding ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Proceeding...
-              </>
-            ) : (
-              "Borrow"
-            )}
-          </Button>
+          <div className="space-y-4">
+            <Button
+              onClick={supplyAndBorrow}
+              className="w-full bg-black hover:bg-gray-800 h-14 text-white text-[18px] rounded-2xl"
+            >
+              Borrow now
+            </Button>
+          </div>
         </div>
       </main>
+
+      <TransactionModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setTxStatus(null);
+          if (txStatus === "success") {
+            router.push("/dashboard");
+          }
+        }}
+        amount={usdcAmount}
+        requiredBtc={totalBtc}
+        status={txStatus}
+        transactionType="borrow"
+      />
     </div>
+  );
+}
+
+export default function Step2() {
+  return (
+    <Suspense>
+      <Step2Inner />
+    </Suspense>
   );
 }

@@ -15,18 +15,21 @@ function HeaderInner({ showBackButton = false }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const isHomeRoute = pathname === "/";
+  const isDashboardRoute = pathname === "/dashboard";
+  const isEarnRoute = pathname === "/earn";
 
   // Determine current step from pathname
   let currentStep = 0;
   if (pathname.includes("/borrow/step1")) currentStep = 1;
   else if (pathname.includes("/borrow/step2")) currentStep = 2;
-  else if (pathname.includes("/borrow/step3")) currentStep = 3;
 
   const handleBack = () => {
-    if (currentStep === 2) {
+    if (currentStep === 1) {
+      router.push("/dashboard");
+    } else if (currentStep === 2) {
       router.push("/borrow/step1");
-    } else if (currentStep === 3) {
-      router.push("/borrow/step2");
+    } else if (isEarnRoute) {
+      router.push("/dashboard");
     } else {
       router.push("/");
     }
@@ -57,15 +60,15 @@ function HeaderInner({ showBackButton = false }: HeaderProps) {
               <Image
                 src="/morpho-logo.png"
                 alt="Morpho"
-                width={28}
-                height={28}
+                width={30}
+                height={30}
                 className="mr-1"
               />
               <span className="font-semibold text-lg">Morpho</span>
             </div>
           </div>
         </div>
-        {!isHomeRoute && (
+        {!isHomeRoute && !isDashboardRoute && !isEarnRoute && (
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
               <div
@@ -90,20 +93,6 @@ function HeaderInner({ showBackButton = false }: HeaderProps) {
                 } flex items-center justify-center font-bold`}
               >
                 2
-              </div>
-              <div
-                className={`h-1 w-12 ${
-                  currentStep >= 3 ? "bg-black" : "bg-gray-300"
-                } mx-2`}
-              ></div>
-              <div
-                className={`h-8 w-8 rounded-full ${
-                  currentStep >= 3
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-gray-500"
-                } flex items-center justify-center font-bold`}
-              >
-                3
               </div>
             </div>
           </div>

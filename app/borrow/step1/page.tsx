@@ -1,346 +1,289 @@
 "use client";
 
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  ArrowRightCircle,
-  TrendingUp,
-  AlertTriangle,
-  Copy,
-  ExternalLink,
-  Wallet,
-  Check,
-  LogOut,
-  Loader2,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Header from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { Contract } from "ethers";
+import {
+  chainConfig,
+  marketId,
+  marketParams,
+  morphoAddress,
+} from "@/app/blockchain/config";
+import { oracleABI } from "@/app/blockchain/abi/oracleABI";
+import { JsonRpcProvider } from "ethers";
+import { Address, http, createPublicClient } from "viem";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
-import { Address, encodeFunctionData, http } from "viem";
-import { useState, useCallback } from "react";
-import { chainConfig, marketParams, tokenABI } from "@/app/blockchain/config";
-import { toast } from "sonner";
-import { useActivityLog } from "@/contexts/ActivityLogContext";
 import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
-import { sponsored } from "@gelatonetwork/smartwallet";
+import Image from "next/image";
+import { morphoABI } from "@/app/blockchain/abi/morphoABI";
+import { IRM_ABI } from "@/app/blockchain/abi/irmABI";
 
-const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
+// Custom Input component
+const Input = React.forwardRef<
+  HTMLInputElement,
+  React.InputHTMLAttributes<HTMLInputElement>
+>(({ className, ...props }, ref) => {
+  return (
+    <input
+      className={`w-full bg-transparent text-[160px] font-normal text-center focus:outline-none ${className}`}
+      ref={ref}
+      {...props}
+    />
+  );
+});
+Input.displayName = "Input";
+
+// Add this custom hook at the top level
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export default function Step1() {
   const router = useRouter();
+  const [usdcAmount, setUsdcAmount] = useState("0");
+  const [cbBtcPrice, setCbBtcPrice] = useState("0");
+  const [isFetching, setIsFetching] = useState(false);
+  const [apr, setApr] = useState(0);
   const {
     gelato: { client },
-    logout,
   } = useGelatoSmartWalletProviderContext();
-
-  const [isCopied, setIsCopied] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
-  const { addLog } = useActivityLog();
-  const [isProceeding, setIsProceeding] = useState(false);
-
   const accountAddress = client?.account.address;
+
+  const publicClient = createPublicClient({
+    chain: chainConfig,
+    transport: http(),
+  });
+
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
+  const [isProceeding, setIsProceeding] = useState(false);
 
-  const handleCopy = useCallback(() => {
-    if (accountAddress) {
-      navigator.clipboard.writeText(accountAddress);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }
-  }, [accountAddress]);
+  // Move calculation logic to useEffect
+  useEffect(() => {
+    const calculateRequiredSupply = async () => {
+      setIsFetching(true);
+      try {
+        const provider = new JsonRpcProvider(
+          process.env.NEXT_PUBLIC_MORPHO_RPC_URL
+        );
+        const oracleContract = new Contract(
+          marketParams.oracle,
+          oracleABI,
+          provider
+        );
+        const price = await oracleContract.latestAnswer();
 
-  const handleExplorerClick = () => {
-    if (accountAddress) {
-      window.open(`https://scope.sh/84532/address/${accountAddress}`, "_blank");
-    }
-  };
-
-  const handleLogout = async () => {
-    logout();
-    router.push("/");
-  };
-
-  const handleMintCollateral = async () => {
-    try {
-      setIsMinting(true);
-
-      // Convert input amount to proper decimal format (8 decimals)
-      const amountInDecimals = BigInt(Math.floor(parseFloat("1") * 100000000));
-
-      const calls = [
-        // Add approval call for collateral token
-        {
-          to: marketParams.collateralToken as `0x${string}`,
-          data: encodeFunctionData({
-            abi: tokenABI,
-            functionName: "mint",
-            args: [client?.account.address, amountInDecimals],
-          }),
-        },
-      ];
-      const smartWalletResponse = await client?.execute({
-        payment: sponsored(GELATO_API_KEY),
-        calls,
-      });
-
-      const userOpHash = smartWalletResponse?.id;
-
-      const txHash = await smartWalletResponse?.wait();
-
-      toast.success("Tokens claimed successfully!");
-
-      // Add log entry
-      addLog({
-        message: "Minted 1 cbBTC",
-        timestamp: new Date().toISOString(),
-        details: {
-          userOpHash,
-          txHash,
-          isSponsored: true,
-        },
-      });
-
-      // Refresh token holdings after successful transaction
-      if (accountAddress) {
-        refetchTokenHoldings();
+        // Format price with 2 decimal places
+        const formattedPrice = (Number(price) / 1e8).toFixed(2);
+        setCbBtcPrice(formattedPrice);
+      } catch (error) {
+        console.error("Error calculating required supply:", error);
+        setCbBtcPrice("0");
+      } finally {
+        setIsFetching(false);
       }
-    } catch (error: any) {
-      console.log(error);
-      toast.error(`Error claiming token. Check the logs`);
-    } finally {
-      setIsMinting(false);
+    };
+    calculateRequiredSupply();
+  }, []);
+
+  const handleUsdcChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9.]/g, "");
+
+    if (value.startsWith("0") && value.length > 1 && !value.startsWith("0.")) {
+      value = value.replace(/^0+/, "");
     }
+
+    if (!value) {
+      value = "0";
+    }
+
+    const decimalCount = (value.match(/\./g) || []).length;
+    if (decimalCount > 1) {
+      return;
+    }
+
+    if (value.includes(".")) {
+      const [whole, decimal] = value.split(".");
+      if (decimal?.length > 2) {
+        value = `${whole}.${decimal.slice(0, 2)}`;
+      }
+    }
+    setUsdcAmount(value);
   };
 
-  const handleProceed = async () => {
+  // Format display value
+  const displayValue = usdcAmount === "0" ? "0" : usdcAmount.replace(/^0+/, "");
+
+  const handleBorrow = async () => {
     setIsProceeding(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      await router.push("/borrow/step2");
+      await router.push(
+        `/borrow/step2?amount=${usdcAmount}&apr=${apr.toFixed(2)}`
+      );
     } finally {
       setIsProceeding(false);
     }
   };
+  useEffect(() => {
+    calculateAPR();
+  }, []);
+
+  async function calculateAPR() {
+    const marketDetails: any = await publicClient.readContract({
+      address: morphoAddress,
+      abi: morphoABI,
+      functionName: "market",
+      args: [marketId],
+    });
+    const Rate = await publicClient.readContract({
+      address: marketParams.irm as Address,
+      abi: IRM_ABI,
+      functionName: "borrowRateView",
+      args: [marketParams, marketDetails],
+    });
+    const borrowRate = Number(Rate) / 1e18;
+    const secondsPerYear = 60 * 60 * 24 * 365;
+    const apr = Math.exp(Number(borrowRate) * secondsPerYear) - 1;
+    setApr(apr * 100);
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
-      <Header />
+      <Header showBackButton />
 
-      <main className="flex-1 container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 p-8 mt-8">
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight text-gray-900">
-              Get a USDC loan
-              <br />
-              with your Bitcoin
-            </h1>
-            <p className="mt-2 flex items-center text-gray-600">
-              Powered by Morpho
-            </p>
-          </div>
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-8">
+            <div className="rounded-[24px] border bg-white p-8">
+              <div className="mb-16">
+                <div className="flex items-center justify-between">
+                  <Input
+                    className="text-[95px] text-black min-w-0 p-0"
+                    value={displayValue}
+                    onChange={handleUsdcChange}
+                    type="text"
+                    inputMode="decimal"
+                    style={{
+                      WebkitAppearance: "none",
+                      MozAppearance: "textfield",
+                    }}
+                  />
+                  <span className="text-[80px] text-gray-400 font-normal">
+                    USDC
+                  </span>
+                </div>
+              </div>
 
-          <div className="space-y-6">
-            <div className="flex items-start space-x-4">
-              <div className="mt-1 bg-blue-100 p-2 rounded-full">
-                <ArrowRightCircle className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">Borrow USDC</h3>
-                <p className="text-gray-600">using your BTC as collateral</p>
-              </div>
-            </div>
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <span className="text-[18px] text-gray-600">
+                    cbBtc Price:
+                  </span>
+                  <div className="flex items-center">
+                    {isFetching ? (
+                      <div className="flex items-center">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                        <span className="text-[18px] font-normal">
+                          Fetching...
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-[18px] font-normal">
+                          {cbBtcPrice}
+                        </span>
+                        <Image
+                          src="/usdc.svg"
+                          alt="USDC"
+                          width={24}
+                          height={24}
+                          className="ml-2"
+                        />
+                      </>
+                    )}
+                  </div>
+                </div>
 
-            <div className="flex items-start space-x-4">
-              <div className="mt-1 bg-blue-100 p-2 rounded-full">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">
-                  Keep your LTV below 86%
-                </h3>
-                <p className="text-gray-600">to prevent liquidation</p>
-              </div>
-            </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[18px] text-gray-600">
+                    Loan-to-Value (LTV):
+                  </span>
+                  <span className="text-[18px] font-normal">94.5%</span>
+                </div>
 
-            <div className="flex items-start space-x-4">
-              <div className="mt-1 bg-blue-100 p-2 rounded-full">
-                <AlertTriangle className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg">
-                  Interest rate is variable
-                </h3>
-                <p className="text-gray-600">
-                  Rates change based on supply and demand for loans on Morpho
-                </p>
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-center justify-between border-t py-4">
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src="/usdc.svg"
+                        alt="USDC"
+                        width={24}
+                        height={24}
+                      />
+                      <span className="text-[18px]">Borrow USDC</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[18px]">{apr.toFixed(2)}%</span>
+                      <span className="text-[16px] text-gray-500">
+                        Variable APR
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t py-4">
+                    <div className="flex items-center gap-3">
+                      <Image
+                        src="/bitcoin.svg"
+                        alt="cbBTC"
+                        width={24}
+                        height={24}
+                      />
+                      <span className="text-[18px]">Collateralize cbBTC</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[18px]">
+                        {tokenHoldings?.cbBTCBalance}
+                      </span>
+                      <span className="text-[16px] text-gray-500">
+                        Available
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
           <Button
-            onClick={handleProceed}
-            className="w-full md:w-auto bg-black hover:bg-gray-800 px-8 py-2 text-white"
-            disabled={isProceeding}
+            onClick={handleBorrow}
+            disabled={usdcAmount === "0" || isProceeding}
+            className="w-full bg-black hover:bg-gray-800 h-14 text-white text-[18px] rounded-2xl"
           >
             {isProceeding ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Proceeding...
               </>
             ) : (
-              "Borrow now"
+              "Borrow"
             )}
           </Button>
-        </div>
-
-        <div className="space-y-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <Wallet className="h-5 w-5" />
-                <CardTitle>Wallet Details</CardTitle>
-              </div>
-              {accountAddress && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1 text-red-500 hover:text-red-600 hover:bg-red-50"
-                  onClick={handleLogout}
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>Logout</span>
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="relative">
-                <div className="flex items-center justify-between rounded-md border bg-muted/50 p-3 text-sm">
-                  <code className="text-xs sm:text-sm font-mono">
-                    {accountAddress || "Connect your wallet"}
-                  </code>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleCopy}
-                      disabled={!accountAddress}
-                    >
-                      {isCopied ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                      <span className="sr-only">Copy</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={handleExplorerClick}
-                      disabled={!accountAddress}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      <span className="sr-only">View in Explorer</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center text-green-500">
-                  <Check className="mr-1 h-4 w-4" />
-                  <span>Smart EOA</span>
-                </div>
-                <span className="text-gray-600">
-                  Powered by{" "}
-                  <span className="font-semibold text-[#FF3B57]">Gelato</span>
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center space-x-2">
-              <Wallet className="h-5 w-5" />
-              <CardTitle>Wallet Balance</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Image src="/weth.svg" alt="ETH" width={20} height={20} />
-                    </div>
-                    <span>ETH</span>
-                  </div>
-                  <span className="font-mono">
-                    {tokenHoldings?.ethBalance || "0.0000"}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between py-2 border-b">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
-                      <Image
-                        src="/bitcoin.svg"
-                        alt="cbBTC"
-                        width={20}
-                        height={20}
-                      />
-                    </div>
-                    <span>cbBTC</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono">
-                      {tokenHoldings?.cbBTCBalance != "0"
-                        ? tokenHoldings?.cbBTCBalance
-                        : ""}
-                    </span>
-                    {accountAddress &&
-                      (!tokenHoldings?.cbBTCBalance ||
-                        parseFloat(tokenHoldings.cbBTCBalance) === 0) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs bg-orange-100 hover:bg-orange-200 text-orange-700 border-orange-200"
-                          onClick={handleMintCollateral}
-                          disabled={isMinting}
-                        >
-                          {isMinting ? (
-                            <>
-                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                              Minting...
-                            </>
-                          ) : (
-                            "Get 1 cbBTC"
-                          )}
-                        </Button>
-                      )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                      <Image
-                        src="/usdc.svg"
-                        alt="USDC"
-                        width={20}
-                        height={20}
-                      />
-                    </div>
-                    <span>USDC</span>
-                  </div>
-                  <span className="font-mono">
-                    {tokenHoldings?.loanTokenBalance || "0.00"}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </main>
     </div>

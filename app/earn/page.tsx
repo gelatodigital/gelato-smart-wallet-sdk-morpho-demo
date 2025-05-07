@@ -32,6 +32,7 @@ import {
   chainConfig,
   deployerAddress,
   marketId,
+  marketParams,
   morphoAddress,
   morphoVaultAddress,
   usdcAddress,
@@ -45,6 +46,7 @@ import { sponsored } from "@gelatonetwork/smartwallet";
 import { tokenABI } from "../blockchain/abi/ERC20ABI";
 import { useActivityLog } from "@/contexts/ActivityLogContext";
 import { toast } from "sonner";
+import { IRM_ABI } from "../blockchain/abi/irmABI";
 // Custom Input component
 const Input = React.forwardRef<
   HTMLInputElement,
@@ -68,6 +70,8 @@ export default function SupplyPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [txStatus, setTxStatus] = useState<"loading" | "success" | null>(null);
   const [supplyTrigger, setSupplyTrigger] = useState(0);
+  const [apr, setApr] = useState(0);
+  const [isLoadingMarketDetails, setIsLoadingMarketDetails] = useState(false);
   const [calculatedReturns, setCalculatedReturns] = useState({
     oneMonth: { interest: "0.00", total: "0.00" },
     threeMonths: { interest: "0.00", total: "0.00" },
@@ -78,10 +82,9 @@ export default function SupplyPage() {
     totalSupply: 0,
     totalBorrowed: 0,
     utilizationRate: 0,
-    apy: 0,
+    apr: 0,
   });
   const [vaultData, setVaultData] = useState({
-    apy: 0,
     totalSupply: 0,
     supplyCap: 0,
   });
@@ -103,43 +106,6 @@ export default function SupplyPage() {
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
   const { addLog } = useActivityLog();
-  useEffect(() => {
-    if (supplyAmount && !isNaN(Number.parseFloat(supplyAmount))) {
-      const amount = Number.parseFloat(supplyAmount);
-
-      // Calculate returns for different time periods
-      const oneMonthInterest = amount * (marketData.apy / 100) * (1 / 12);
-      const threeMonthsInterest = amount * (marketData.apy / 100) * (3 / 12);
-      const sixMonthsInterest = amount * (marketData.apy / 100) * (6 / 12);
-      const oneYearInterest = amount * (marketData.apy / 100);
-
-      setCalculatedReturns({
-        oneMonth: {
-          interest: oneMonthInterest.toFixed(2),
-          total: (amount + oneMonthInterest).toFixed(2),
-        },
-        threeMonths: {
-          interest: threeMonthsInterest.toFixed(2),
-          total: (amount + threeMonthsInterest).toFixed(2),
-        },
-        sixMonths: {
-          interest: sixMonthsInterest.toFixed(2),
-          total: (amount + sixMonthsInterest).toFixed(2),
-        },
-        oneYear: {
-          interest: oneYearInterest.toFixed(2),
-          total: (amount + oneYearInterest).toFixed(2),
-        },
-      });
-    } else {
-      setCalculatedReturns({
-        oneMonth: { interest: "0.00", total: "0.00" },
-        threeMonths: { interest: "0.00", total: "0.00" },
-        sixMonths: { interest: "0.00", total: "0.00" },
-        oneYear: { interest: "0.00", total: "0.00" },
-      });
-    }
-  }, [supplyAmount, marketData.apy]);
   const handleSupply = () => {
     setIsModalOpen(true);
     supplyUSDC();
@@ -149,8 +115,27 @@ export default function SupplyPage() {
     checkMarketDetails();
   }, [supplyTrigger, withdrawTrigger]);
 
-  useEffect(() => {
-    const checkAPYForUser = async () => {
+  const checkMarketDetails = async () => {
+    setIsLoadingMarketDetails(true);
+    try {
+      const marketConfig: any = await publicClient.readContract({
+        address: morphoVaultAddress,
+        abi: MORPHO_VAULT_ABI,
+        functionName: "config",
+        args: [marketId],
+      });
+      const totalAssets: any = await publicClient.readContract({
+        address: morphoVaultAddress,
+        abi: MORPHO_VAULT_ABI,
+        functionName: "totalAssets",
+        args: [],
+      });
+      const marketDetails: any = await publicClient.readContract({
+        address: morphoAddress,
+        abi: morphoABI,
+        functionName: "market",
+        args: [marketId],
+      });
       const userShares: any = await publicClient.readContract({
         address: morphoVaultAddress,
         abi: MORPHO_VAULT_ABI,
@@ -163,74 +148,45 @@ export default function SupplyPage() {
         functionName: "convertToAssets",
         args: [userShares],
       });
-      const calculateAPY: any = await publicClient.readContract({
+      const calculateUserAPY: any = await publicClient.readContract({
         address: vaultStatsAddress,
         abi: VAULT_STATS_ABI,
         functionName: "calculateApyUser",
         args: [client?.account.address, userAssets],
       });
-      let userApyPeriod = Number(calculateAPY[0]) / 1e18;
+      const Rate = await publicClient.readContract({
+        address: marketParams.irm as Address,
+        abi: IRM_ABI,
+        functionName: "borrowRateView",
+        args: [marketParams, marketDetails],
+      });
+      const borrowRate = Number(Rate) / 1e18;
+      const secondsPerYear = 60 * 60 * 24 * 365;
+      const apr = Math.exp(Number(borrowRate) * secondsPerYear) - 1;
+      setApr(apr * 100);
+      let userApyPeriod = Number(calculateUserAPY[0]) / 1e18;
       let userApy = userApyPeriod * 365 * 24 * 60 * 60;
       setUserApy(userApy * 100);
-    };
-    checkAPYForUser();
-  }, [supplyTrigger, withdrawTrigger]);
-
-  const checkMarketDetails = async () => {
-    const marketConfig: any = await publicClient.readContract({
-      address: morphoVaultAddress,
-      abi: MORPHO_VAULT_ABI,
-      functionName: "config",
-      args: [marketId],
-    });
-    const totalAssets: any = await publicClient.readContract({
-      address: morphoVaultAddress,
-      abi: MORPHO_VAULT_ABI,
-      functionName: "totalAssets",
-      args: [],
-    });
-    const marketDetails: any = await publicClient.readContract({
-      address: morphoAddress,
-      abi: morphoABI,
-      functionName: "market",
-      args: [marketId],
-    });
-    const calculateAPY: any = await publicClient.readContract({
-      address: vaultStatsAddress,
-      abi: VAULT_STATS_ABI,
-      functionName: "calculateApyVault",
-      args: [totalAssets],
-    });
-    const userShares: any = await publicClient.readContract({
-      address: morphoVaultAddress,
-      abi: MORPHO_VAULT_ABI,
-      functionName: "balanceOf",
-      args: [client?.account.address],
-    });
-    const userAssets: any = await publicClient.readContract({
-      address: morphoVaultAddress,
-      abi: MORPHO_VAULT_ABI,
-      functionName: "convertToAssets",
-      args: [userShares],
-    });
-    const vaultApyPeriod = Number(calculateAPY[0]) / 1e18;
-    const vaultApy = vaultApyPeriod * 365 * 24 * 60 * 60;
-    setMarketData({
-      totalSupply: Number(formatUnits(marketDetails[0], 6)),
-      totalBorrowed: Number(formatUnits(marketDetails[2], 6)),
-      utilizationRate:
-        (Number(formatUnits(marketDetails[2], 6)) /
-          Number(formatUnits(marketDetails[0], 6))) *
-        100,
-      apy: vaultApy * 100,
-    });
-    setVaultData({
-      apy: vaultApy * 100,
-      totalSupply: Number(formatUnits(totalAssets, 6)),
-      supplyCap: Number(formatUnits(marketConfig[0], 6)),
-    });
-    setTotalAssets(totalAssets);
-    setUserAssets(userAssets);
+      setMarketData({
+        totalSupply: Number(formatUnits(marketDetails[0], 6)),
+        totalBorrowed: Number(formatUnits(marketDetails[2], 6)),
+        utilizationRate:
+          (Number(formatUnits(marketDetails[2], 6)) /
+            Number(formatUnits(marketDetails[0], 6))) *
+          100,
+        apr: apr * 100,
+      });
+      setVaultData({
+        totalSupply: Number(formatUnits(totalAssets, 6)),
+        supplyCap: Number(formatUnits(marketConfig[0], 6)),
+      });
+      setTotalAssets(totalAssets);
+      setUserAssets(userAssets);
+    } catch (error) {
+      console.error("Error fetching market details:", error);
+    } finally {
+      setIsLoadingMarketDetails(false);
+    }
   };
 
   async function supplyUSDC() {
@@ -447,8 +403,28 @@ export default function SupplyPage() {
                           )}
                         </div>
                       </div>
-                      <div className="ml-auto bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                        {userApy.toFixed(2)}% APY
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4 bg-green-50 border-green-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <Wallet className="h-5 w-5 text-green-600" />
+                        </div>
+                        <div className="ml-3">
+                          <div className="font-medium">
+                            Your Deposited Assets + Earnings
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            Earning {userApy.toFixed(2)}% APY
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xl font-bold text-green-600">
+                          {formatUnits(userAssets, 6)} USDC
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -499,84 +475,6 @@ export default function SupplyPage() {
                   </Button>
                 </CardContent>
               </Card>
-
-              {/* <Card>
-                <CardHeader className="flex flex-row items-center">
-                  <CardTitle className="flex items-center">
-                    <Calculator className="h-5 w-5 mr-2" />
-                    APY Calculator
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <p className="text-sm text-gray-600">
-                      See how much you could earn by supplying USDC at{" "}
-                      {marketData.apy.toFixed(2)}% APY
-                    </p>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2 font-medium text-gray-600">
-                              Time Period
-                            </th>
-                            <th className="text-right py-2 font-medium text-gray-600">
-                              Interest Earned
-                            </th>
-                            <th className="text-right py-2 font-medium text-gray-600">
-                              Total Amount
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr className="border-b">
-                            <td className="py-3">1 Month</td>
-                            <td className="text-right py-3">
-                              {calculatedReturns.oneMonth.interest} USDC
-                            </td>
-                            <td className="text-right py-3 font-medium">
-                              {calculatedReturns.oneMonth.total} USDC
-                            </td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-3">3 Months</td>
-                            <td className="text-right py-3">
-                              {calculatedReturns.threeMonths.interest} USDC
-                            </td>
-                            <td className="text-right py-3 font-medium">
-                              {calculatedReturns.threeMonths.total} USDC
-                            </td>
-                          </tr>
-                          <tr className="border-b">
-                            <td className="py-3">6 Months</td>
-                            <td className="text-right py-3">
-                              {calculatedReturns.sixMonths.interest} USDC
-                            </td>
-                            <td className="text-right py-3 font-medium">
-                              {calculatedReturns.sixMonths.total} USDC
-                            </td>
-                          </tr>
-                          <tr>
-                            <td className="py-3">1 Year</td>
-                            <td className="text-right py-3">
-                              {calculatedReturns.oneYear.interest} USDC
-                            </td>
-                            <td className="text-right py-3 font-medium">
-                              {calculatedReturns.oneYear.total} USDC
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="text-xs text-gray-500 mt-2">
-                      Note: Calculations are estimates based on the current APY
-                      rate. Actual returns may vary as rates are variable.
-                    </div>
-                  </div>
-                </CardContent>
-              </Card> */}
             </TabsContent>
             <TabsContent value="withdraw" className="space-y-6 pt-4">
               <Card>
@@ -628,7 +526,7 @@ export default function SupplyPage() {
                             <button
                               className="text-sm text-blue-600"
                               onClick={() =>
-                                setWithdrawAmount(userAssets.toString())
+                                setWithdrawAmount(formatUnits(userAssets, 6))
                               }
                             >
                               Max
@@ -679,115 +577,126 @@ export default function SupplyPage() {
               <CardTitle>Market Information</CardTitle>
             </CardHeader>
             <CardContent className="pt-6">
-              <Tabs defaultValue="market" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="market" className="flex items-center">
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Market
-                  </TabsTrigger>
-                  <TabsTrigger value="vault" className="flex items-center">
-                    <Vault className="h-4 w-4 mr-2" />
-                    Vault
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="market" className="space-y-4 mt-4">
-                  <div className="space-y-4">
-                    <div className="py-2">
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-600">
-                          Utilization Rate
-                        </span>
-                        <span className="text-sm font-medium">
-                          {marketData.utilizationRate.toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{ width: `${marketData.utilizationRate}%` }}
-                        ></div>
-                      </div>
-                    </div>
-
-                    <div className="border-t pt-3 mt-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Supplied</span>
-                        <span className="font-medium">
-                          ~{Math.round(marketData.totalSupply)} USDC
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm mt-1">
-                        <span className="text-gray-600">Total Borrowed</span>
-                        <span className="font-medium">
-                          ~{Math.round(marketData.totalBorrowed)} USDC
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="vault" className="space-y-4 mt-4">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between py-2 border-b">
-                      <div className="flex items-center space-x-2">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <Vault className="h-4 w-4 text-blue-600" />
+              {isLoadingMarketDetails ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                  <span className="ml-2">Loading market details...</span>
+                </div>
+              ) : (
+                <Tabs defaultValue="market" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="market" className="flex items-center">
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      Market
+                    </TabsTrigger>
+                    <TabsTrigger value="vault" className="flex items-center">
+                      <Vault className="h-4 w-4 mr-2" />
+                      Vault
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="market" className="space-y-4 mt-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between py-2 border-b">
+                        <div className="flex items-center space-x-2">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <Image
+                              src="/usdc.svg"
+                              alt="USDC"
+                              width={20}
+                              height={20}
+                            />
+                          </div>
+                          <span>USDC</span>
                         </div>
-                        <span>USDC Vault</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">
-                          {vaultData.apy.toFixed(2)}% APY
+                        <div className="text-right">
+                          <div className="font-medium">
+                            {marketData.apr.toFixed(2)}% APY
+                          </div>
                         </div>
                       </div>
-                    </div>
+                      <div className="py-2">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm text-gray-600">
+                            Utilization Rate
+                          </span>
+                          <span className="text-sm font-medium">
+                            {marketData.utilizationRate.toFixed(2)}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{ width: `${marketData.utilizationRate}%` }}
+                          ></div>
+                        </div>
+                      </div>
 
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <span className="text-sm text-gray-600">
-                          Allowed Deposit Cap
-                        </span>
-                        <span className="text-sm font-medium">
-                          ~{Math.round(vaultData.totalSupply)} /
-                          {Math.round(vaultData.supplyCap)}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                        <div
-                          className="bg-blue-600 h-2 rounded-full"
-                          style={{
-                            width: `${
-                              (vaultData.totalSupply / vaultData.supplyCap) *
-                              100
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        <span className="text-green-600 font-medium">
-                          {vaultData.supplyCap - vaultData.totalSupply}{" "}
-                          remaining
-                        </span>{" "}
-                        before cap is reached
+                      <div className="border-t pt-3 mt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Total Supplied</span>
+                          <span className="font-medium">
+                            ~{Math.round(marketData.totalSupply)} USDC
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <span className="text-gray-600">Total Borrowed</span>
+                          <span className="font-medium">
+                            ~{Math.round(marketData.totalBorrowed)} USDC
+                          </span>
+                        </div>
                       </div>
                     </div>
+                  </TabsContent>
+                  <TabsContent value="vault" className="space-y-4 mt-4">
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm text-gray-600">
+                            Allowed Deposit Cap
+                          </span>
+                          <span className="text-sm font-medium">
+                            ~{Math.round(vaultData.totalSupply)} /
+                            {Math.round(vaultData.supplyCap)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full"
+                            style={{
+                              width: `${
+                                (vaultData.totalSupply / vaultData.supplyCap) *
+                                100
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          <span className="text-green-600 font-medium">
+                            {vaultData.supplyCap - vaultData.totalSupply}{" "}
+                            remaining
+                          </span>{" "}
+                          before cap is reached
+                        </div>
+                      </div>
 
-                    <div className="border-t pt-3 mt-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Supply</span>
-                        <span className="font-medium">
-                          ~{Math.round(vaultData.totalSupply)} USDC
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm mt-1">
-                        <span className="text-gray-600">Supply Cap</span>
-                        <span className="font-medium">
-                          {Math.round(vaultData.supplyCap)} USDC
-                        </span>
+                      <div className="border-t pt-3 mt-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Total Supply</span>
+                          <span className="font-medium">
+                            ~{Math.round(vaultData.totalSupply)} USDC
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-1">
+                          <span className="text-gray-600">Supply Cap</span>
+                          <span className="font-medium">
+                            {Math.round(vaultData.supplyCap)} USDC
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
+                  </TabsContent>
+                </Tabs>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -814,7 +723,7 @@ export default function SupplyPage() {
                 <div>
                   <h3 className="font-semibold">Earn Interest</h3>
                   <p className="text-sm text-gray-600">
-                    Earn {marketData.apy.toFixed(2)}% APY on your supplied USDC
+                    Earn {marketData.apr.toFixed(2)}% APY on your supplied USDC
                   </p>
                 </div>
               </div>

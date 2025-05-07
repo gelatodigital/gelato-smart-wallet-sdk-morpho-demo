@@ -3,6 +3,7 @@ import "./globals.css";
 import Providers from "@/app/providers";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
   title: "Gelato",
@@ -33,7 +34,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <PageTransition>{children}</PageTransition>
+        </Providers>
       </body>
     </html>
   );

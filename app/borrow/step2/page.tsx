@@ -3,7 +3,7 @@
 import React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bitcoin, CircleDollarSign, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { Contract } from "ethers";
@@ -11,7 +11,7 @@ import { marketParams, oracleABI } from "@/app/blockchain/config";
 import { JsonRpcProvider } from "ethers";
 import { Address } from "viem";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
 import Image from "next/image";
 
 // Custom Input component
@@ -34,8 +34,11 @@ export default function Step2() {
   const [usdcAmount, setUsdcAmount] = useState("0");
   const [requiredBtc, setRequiredBtc] = useState("0");
   const [isCalculating, setIsCalculating] = useState(false);
-  const { primaryWallet } = useDynamicContext();
-  const accountAddress = primaryWallet?.address;
+  const {
+    gelato: { client },
+  } = useGelatoSmartWalletProviderContext();
+  const accountAddress = client?.account.address;
+
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
   const [isProceeding, setIsProceeding] = useState(false);

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Bitcoin, CircleDollarSign, ArrowRight } from "lucide-react";
 import Header from "@/components/Header";
 import TransactionModal from "@/components/TransactionModal";
-import { Contract } from "ethers";
+import { Contract, JsonRpcProvider } from "ethers";
 import {
   chainConfig,
   marketParams,
@@ -15,18 +15,14 @@ import {
   oracleABI,
   tokenABI,
 } from "@/app/blockchain/config";
-import { JsonRpcProvider } from "ethers";
-import { getUserOperationGasPrice } from "@zerodev/sdk";
-import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
-import { createKernelAccountClient } from "@zerodev/sdk";
 import { Address, encodeFunctionData, http } from "viem";
 import { toast } from "sonner";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
+import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import Image from "next/image";
 import { useActivityLog } from "@/contexts/ActivityLogContext";
+import { sponsored } from "@gelatonetwork/smartwallet";
 
-let CHAIN = chainConfig;
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
 
 function Step3Inner() {
@@ -37,9 +33,12 @@ function Step3Inner() {
   const [requiredBtc, setRequiredBtc] = useState("0");
   const [btcPrice, setBtcPrice] = useState("0");
   const [txStatus, setTxStatus] = useState<"loading" | "success" | null>(null);
-  const { primaryWallet } = useDynamicContext();
+  const {
+    gelato: { client },
+  } = useGelatoSmartWalletProviderContext();
+  const accountAddress = client?.account.address;
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
-    useTokenHoldings(primaryWallet?.address as Address);
+    useTokenHoldings(accountAddress as Address);
   const { addLog } = useActivityLog();
 
   useEffect(() => {
@@ -79,38 +78,10 @@ function Step3Inner() {
     }
   };
 
-  const handleKernelClientCreation = async () => {
-    const connector: any = primaryWallet?.connector;
-    const params = {
-      withSponsorship: true,
-    };
-    let client: any;
-    if (isZeroDevConnector(connector)) {
-      client = connector?.getAccountAbstractionProvider(params);
-    }
-
-    const kernelClient = createKernelAccountClient({
-      account: client.account,
-      chain: CHAIN,
-      bundlerTransport: http(
-        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc?sponsorApiKey=${GELATO_API_KEY}`
-      ),
-      userOperation: {
-        estimateFeesPerGas: async ({ bundlerClient }) => {
-          return getUserOperationGasPrice(bundlerClient);
-        },
-      },
-    });
-    return kernelClient;
-  };
-
   const supplyAndBorrow = async () => {
     try {
       setIsModalOpen(true);
       setTxStatus("loading");
-
-      const kernelClient = await handleKernelClientCreation();
-
       // Convert input amounts to proper decimal format
       // 8 decimals for cbBTC
       const borrowAmountInDecimals = BigInt(
@@ -139,7 +110,7 @@ function Step3Inner() {
         args: [
           marketParams,
           supplyAmountInDecimals,
-          kernelClient.account.address,
+          client?.account.address,
           "0x",
         ],
       });
@@ -151,8 +122,8 @@ function Step3Inner() {
           marketParams,
           borrowAmountInDecimals,
           BigInt(0),
-          kernelClient.account.address,
-          kernelClient.account.address,
+          client?.account.address,
+          client?.account.address,
         ],
       });
 
@@ -176,17 +147,16 @@ function Step3Inner() {
         },
       ];
 
-      const userOpHash = await kernelClient.sendUserOperation({
-        callData: await kernelClient.account.encodeCalls(calls),
-        maxFeePerGas: BigInt(0),
-        maxPriorityFeePerGas: BigInt(0),
+      const smartWalletResponse = await client?.execute({
+        payment: sponsored(GELATO_API_KEY),
+        calls,
       });
+
+      const userOpHash = smartWalletResponse?.id;
+
       console.log(userOpHash);
 
-      const receipt = await kernelClient.waitForUserOperationReceipt({
-        hash: userOpHash,
-      });
-      const txHash = receipt.receipt.transactionHash;
+      const txHash = await smartWalletResponse?.wait();
 
       if (!txHash) {
         toast.error("Transaction failed");
@@ -210,7 +180,7 @@ function Step3Inner() {
       });
 
       // Refresh token holdings after successful transaction
-      if (primaryWallet?.address) {
+      if (accountAddress) {
         refetchTokenHoldings();
       }
     } catch (error: any) {

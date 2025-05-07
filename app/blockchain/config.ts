@@ -4,16 +4,12 @@ import { HiOutlineCurrencyDollar } from "react-icons/hi";
 export const chainConfig = baseSepolia;
 export const usdcAddress = "0x87c25229AFBC30418D0144e8Dfb2bcf8eFd92c6c";
 
-const ZERODEV_PROJECT_ID = process.env
-  .NEXT_PUBLIC_MORPHO_ZERODEV_PROJECT_ID as string;
-
 export const TOKEN_CONFIG = {
   USDC: {
     address: usdcAddress,
     symbol: "USDC",
     decimals: 6,
     icon: HiOutlineCurrencyDollar,
-    paymasterUrl: `https://rpc.zerodev.app/api/v2/paymaster/${ZERODEV_PROJECT_ID}?selfFunded=true`,
   },
 };
 

@@ -2,62 +2,33 @@
 
 import { useEffect, useState } from "react";
 import Header from "../components/Header";
-import {
-  createKernelAccountClient,
-  getUserOperationGasPrice,
-} from "@zerodev/sdk";
-import { http } from "wagmi";
-import { chainConfig } from "./blockchain/config";
 import { toast } from "sonner";
-import { useDynamicContext, DynamicWidget } from "@dynamic-labs/sdk-react-core";
-import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
-import { DynamicConnectButton } from "@dynamic-labs/sdk-react-core";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Loader2 } from "lucide-react";
-
-let CHAIN = chainConfig;
-const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
+import {
+  useGelatoSmartWalletProviderContext,
+  GelatoSmartWalletConnectButton,
+} from "@gelatonetwork/smartwallet-react-sdk";
 
 export default function Home() {
   const router = useRouter();
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
 
   // 7702 configuration
-  const { primaryWallet, handleLogOut } = useDynamicContext();
-  const connector: any = primaryWallet?.connector;
-  const params = {
-    withSponsorship: true,
-  };
-  let client: any;
-  if (isZeroDevConnector(connector)) {
-    client = connector?.getAccountAbstractionProvider(params);
-  }
-
-  const createSponsoredKernelClient = async () => {
-    const kernelClient = createKernelAccountClient({
-      account: client.account,
-      chain: CHAIN,
-      bundlerTransport: http(
-        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc?sponsorApiKey=${GELATO_API_KEY}`
-      ),
-      userOperation: {
-        estimateFeesPerGas: async ({ bundlerClient }) => {
-          return getUserOperationGasPrice(bundlerClient);
-        },
-      },
-    });
-    return kernelClient;
-  };
+  const {
+    gelato: { client },
+    logout,
+  } = useGelatoSmartWalletProviderContext();
 
   useEffect(() => {
     async function createAccount() {
       if (client) {
         try {
-          const kernelClient = await createSponsoredKernelClient();
+          setIsInitializing(true);
           router.push("/borrow/step1");
         } catch (error) {
-          console.error("Failed to create kernel client:", error);
+          console.error("Failed to create smart wallet client:", error);
           toast.error("Failed to initialize wallet");
         } finally {
           setIsInitializing(false);
@@ -66,12 +37,6 @@ export default function Home() {
     }
     createAccount();
   }, [client]);
-
-  useEffect(() => {
-    if (primaryWallet) {
-      setIsInitializing(true);
-    }
-  }, [primaryWallet]);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -96,11 +61,11 @@ export default function Home() {
                 Connecting...
               </Button>
             ) : (
-              <DynamicConnectButton buttonClassName="h-12 px-8 text-lg rounded-md bg-black hover:bg-gray-800 text-white">
-                <div className="flex items-center justify-center">
+              <GelatoSmartWalletConnectButton>
+                <div className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-black hover:bg-gray-800 text-white">
                   Get Started <ArrowRight className="ml-2 h-5 w-5" />
                 </div>
-              </DynamicConnectButton>
+              </GelatoSmartWalletConnectButton>
             )}
           </div>
         </div>

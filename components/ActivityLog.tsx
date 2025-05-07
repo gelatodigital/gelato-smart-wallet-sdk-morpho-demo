@@ -1,6 +1,7 @@
 import { ExternalLink, Info, Layers } from "lucide-react";
 import { chainConfig } from "@/app/blockchain/config";
 import { useState, useEffect } from "react";
+import { formatTimeAgo } from "@/lib/utils";
 
 interface ActivityLogProps {
   logs: {
@@ -35,33 +36,6 @@ export default function ActivityLog({ logs, onShowDetails }: ActivityLogProps) {
 
   // Get the last 4 logs and reverse them to show the latest first
   const recentLogs = [...logs.slice(-4)].reverse();
-
-  const formatTimeAgo = (timestamp: string) => {
-    try {
-      const now = new Date().getTime();
-      const past = new Date(timestamp).getTime();
-      const diff = now - past;
-
-      // Convert to minutes
-      const minutes = Math.floor(diff / (1000 * 60));
-
-      if (minutes < 1) return "just now";
-      if (minutes === 1) return "1 minute ago";
-      if (minutes < 60) return `${minutes} minutes ago`;
-
-      // Convert to hours
-      const hours = Math.floor(minutes / 60);
-      if (hours === 1) return "1 hour ago";
-      if (hours < 24) return `${hours} hours ago`;
-
-      // Convert to days
-      const days = Math.floor(hours / 24);
-      if (days === 1) return "1 day ago";
-      return `${days} days ago`;
-    } catch (error) {
-      return "";
-    }
-  };
 
   const handleShowDetails = (details: any) => {
     if (details && Object.keys(details).length > 0) {

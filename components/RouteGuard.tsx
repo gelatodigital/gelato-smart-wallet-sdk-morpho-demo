@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
-
+import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
 export default function RouteGuard({
   children,
 }: {
@@ -11,19 +10,22 @@ export default function RouteGuard({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { primaryWallet, user } = useDynamicContext();
+  const {
+    gelato: { client },
+  } = useGelatoSmartWalletProviderContext();
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const isPublicPath = pathname === "/";
-    const isAuthenticated = user && primaryWallet;
+    const isAuthenticated = client;
 
     if (!isPublicPath && !isAuthenticated) {
       router.push("/");
     } else {
       setIsLoading(false);
     }
-  }, [pathname, user, primaryWallet, router]);
+  }, [pathname, client, router]);
 
   if (isLoading) {
     return null;

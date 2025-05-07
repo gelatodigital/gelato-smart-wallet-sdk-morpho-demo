@@ -16,31 +16,30 @@ import {
   Loader2,
 } from "lucide-react";
 import Header from "@/components/Header";
-import { useDynamicContext } from "@dynamic-labs/sdk-react-core";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import { Address, encodeFunctionData, http } from "viem";
 import { useState, useCallback } from "react";
 import { chainConfig, marketParams, tokenABI } from "@/app/blockchain/config";
-import { isZeroDevConnector } from "@dynamic-labs/ethereum-aa";
-import {
-  createKernelAccountClient,
-  getUserOperationGasPrice,
-} from "@zerodev/sdk";
 import { toast } from "sonner";
 import { useActivityLog } from "@/contexts/ActivityLogContext";
+import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
+import { sponsored } from "@gelatonetwork/smartwallet";
 
-let CHAIN = chainConfig;
 const GELATO_API_KEY = process.env.NEXT_PUBLIC_MORPHO_GELATO_API_KEY!;
 
 export default function Step1() {
   const router = useRouter();
-  const { primaryWallet, handleLogOut } = useDynamicContext();
+  const {
+    gelato: { client },
+    logout,
+  } = useGelatoSmartWalletProviderContext();
+
   const [isCopied, setIsCopied] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
   const { addLog } = useActivityLog();
   const [isProceeding, setIsProceeding] = useState(false);
 
-  const accountAddress = primaryWallet?.address;
+  const accountAddress = client?.account.address;
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
 
@@ -59,39 +58,13 @@ export default function Step1() {
   };
 
   const handleLogout = async () => {
-    handleLogOut();
+    logout();
     router.push("/");
-  };
-
-  const handleKernelClientCreation = async () => {
-    const connector: any = primaryWallet?.connector;
-    const params = {
-      withSponsorship: true,
-    };
-    let client: any;
-    if (isZeroDevConnector(connector)) {
-      client = connector?.getAccountAbstractionProvider(params);
-    }
-
-    const kernelClient = createKernelAccountClient({
-      account: client.account,
-      chain: CHAIN,
-      bundlerTransport: http(
-        `https://api.gelato.digital/bundlers/${CHAIN.id}/rpc?sponsorApiKey=${GELATO_API_KEY}`
-      ),
-      userOperation: {
-        estimateFeesPerGas: async ({ bundlerClient }) => {
-          return getUserOperationGasPrice(bundlerClient);
-        },
-      },
-    });
-    return kernelClient;
   };
 
   const handleMintCollateral = async () => {
     try {
       setIsMinting(true);
-      const kernelClient = await handleKernelClientCreation();
 
       // Convert input amount to proper decimal format (8 decimals)
       const amountInDecimals = BigInt(Math.floor(parseFloat("1") * 100000000));
@@ -103,26 +76,18 @@ export default function Step1() {
           data: encodeFunctionData({
             abi: tokenABI,
             functionName: "mint",
-            args: [kernelClient.account.address, amountInDecimals],
+            args: [client?.account.address, amountInDecimals],
           }),
         },
       ];
-
-      const userOpHash = await kernelClient.sendUserOperation({
-        callData: await kernelClient.account.encodeCalls(calls),
-        maxFeePerGas: BigInt(0),
-        maxPriorityFeePerGas: BigInt(0),
+      const smartWalletResponse = await client?.execute({
+        payment: sponsored(GELATO_API_KEY),
+        calls,
       });
 
-      const receipt = await kernelClient.waitForUserOperationReceipt({
-        hash: userOpHash,
-      });
+      const userOpHash = smartWalletResponse?.id;
 
-      const txHash = receipt.receipt.transactionHash;
-      if (!txHash) {
-        toast.error("Transaction failed");
-        return;
-      }
+      const txHash = await smartWalletResponse?.wait();
 
       toast.success("Tokens claimed successfully!");
 

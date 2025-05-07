@@ -1,9 +1,10 @@
 # EIP 7702 Integration with AA powered by Gelato
 
-A Next.js application demonstrating the integration of EIP 7702 (Account Abstraction) using Gelato's infrastructure. This project showcases how to use EOAs as smart contract wallets with advanced features like gasless transactions to borrow loan(USDC) from Morpho market .
+A Next.js application demonstrating the integration of EIP 7702 (Account Abstraction) using Gelato's infrastructure. This project showcases how to use EOAs as smart contract wallets with advanced features like gasless transactions to borrow and supply loan(USDC) from/to Morpho market.
 
 ## Features
 
+- Smart EOA's using Gelato Smart Wallet SDK
 - Sponsored transactions using Gelato Bundler via 1Balance
 
 ## Prerequisites
@@ -37,16 +38,15 @@ yarn install
 
 4. Set up environment variables:
 
-   - Copy `.env.local.example` to `.env.local`
+   - Copy `.env.example` to `.env`
    - Fill in the required environment variables
 
 Note:- Currently the demo is configured to base sepolia
 
 ```env
-NEXT_PUBLIC_DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id
-NEXT_PUBLIC_ZERODEV_PROJECT_ID=your-zerodev-project-id
-NEXT_PUBLIC_GELATO_API_KEY="your-gelato-api-key"
-NEXT_PUBLIC_RPC_URL="your-rpc-url"
+NEXT_PUBLIC_MORPHO_DYNAMIC_ENVIRONMENT_ID=your-dynamic-environment-id
+NEXT_PUBLIC_MORPHO_GELATO_API_KEY="your-gelato-api-key"
+NEXT_PUBLIC_MORPHO_RPC_URL="your-rpc-url"
 ```
 
 ## Development
@@ -72,9 +72,6 @@ The application will be available at `http://localhost:3000`
 
 ## Key Dependencies
 
-- `@dynamic-labs/sdk-react-core`: Core Dynamic SDK for Web3 authentication
-- `@dynamic-labs/ethereum-aa`: Account Abstraction integration
-- `@dynamic-labs/ethereum`: Ethereum wallet connectors
-- `@zerodev/sdk`: ZeroDev smart contract wallet SDK
+- `@gelatonetwork/smartwallet-react-sdk`: Gelato's 7702 React SDK
 - `viem` v2.23.9: Modern Ethereum library
 - `ethers`: Ethereum library

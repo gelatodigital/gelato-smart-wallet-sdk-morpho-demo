@@ -90,11 +90,11 @@ export default function SupplyPage() {
   });
   const [totalAssets, setTotalAssets] = useState(0);
   const [userAssets, setUserAssets] = useState(0);
-  const [userApy, setUserApy] = useState(0);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawTrigger, setWithdrawTrigger] = useState(0);
   const [transactionType, setTransactionType] = useState("supply");
   const [isMinting, setIsMinting] = useState(false);
+  const [isLoadingUserAssets, setIsLoadingUserAssets] = useState(true);
   const {
     gelato: { client },
   } = useGelatoSmartWalletProviderContext();
@@ -117,6 +117,7 @@ export default function SupplyPage() {
 
   const checkMarketDetails = async () => {
     setIsLoadingMarketDetails(true);
+    setIsLoadingUserAssets(true);
     try {
       const marketConfig: any = await publicClient.readContract({
         address: morphoVaultAddress,
@@ -148,12 +149,6 @@ export default function SupplyPage() {
         functionName: "convertToAssets",
         args: [userShares],
       });
-      const calculateUserAPY: any = await publicClient.readContract({
-        address: vaultStatsAddress,
-        abi: VAULT_STATS_ABI,
-        functionName: "calculateApyUser",
-        args: [client?.account.address, userAssets],
-      });
       const Rate = await publicClient.readContract({
         address: marketParams.irm as Address,
         abi: IRM_ABI,
@@ -164,9 +159,6 @@ export default function SupplyPage() {
       const secondsPerYear = 60 * 60 * 24 * 365;
       const apr = Math.exp(Number(borrowRate) * secondsPerYear) - 1;
       setApr(apr * 100);
-      let userApyPeriod = Number(calculateUserAPY[0]) / 1e18;
-      let userApy = userApyPeriod * 365 * 24 * 60 * 60;
-      setUserApy(userApy * 100);
       setMarketData({
         totalSupply: Number(formatUnits(marketDetails[0], 6)),
         totalBorrowed: Number(formatUnits(marketDetails[2], 6)),
@@ -186,6 +178,7 @@ export default function SupplyPage() {
       console.error("Error fetching market details:", error);
     } finally {
       setIsLoadingMarketDetails(false);
+      setIsLoadingUserAssets(false);
     }
   };
 
@@ -417,13 +410,20 @@ export default function SupplyPage() {
                             Your Deposited Assets + Earnings
                           </div>
                           <div className="text-sm text-gray-500">
-                            Earning {userApy.toFixed(2)}% APY
+                            Earning {apr.toFixed(2)}% APY
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
                         <div className="text-xl font-bold text-green-600">
-                          {formatUnits(userAssets, 6)} USDC
+                          {isLoadingUserAssets ? (
+                            <div className="flex items-center justify-end">
+                              <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                              <span>Updating...</span>
+                            </div>
+                          ) : (
+                            `${formatUnits(userAssets, 6)} USDC`
+                          )}
                         </div>
                       </div>
                     </div>
@@ -498,7 +498,7 @@ export default function SupplyPage() {
                             <div className="font-medium">USDC</div>
                           </div>
                           <div className="ml-auto bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                            {userApy.toFixed(2)}% APY
+                            {apr.toFixed(2)}% APY
                           </div>
                         </div>
                       </div>
@@ -514,7 +514,14 @@ export default function SupplyPage() {
                             </div>
                           </div>
                           <div className="text-xl font-bold">
-                            {formatUnits(userAssets, 6)} USDC
+                            {isLoadingUserAssets ? (
+                              <div className="flex items-center justify-end">
+                                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                <span>Updating...</span>
+                              </div>
+                            ) : (
+                              `${formatUnits(userAssets, 6)} USDC`
+                            )}
                           </div>
                         </div>
 
@@ -746,7 +753,11 @@ export default function SupplyPage() {
 
       <TransactionModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSupplyAmount("");
+          setWithdrawAmount("");
+        }}
         amount={transactionType === "supply" ? supplyAmount : withdrawAmount}
         requiredBtc={"0"}
         status={txStatus}

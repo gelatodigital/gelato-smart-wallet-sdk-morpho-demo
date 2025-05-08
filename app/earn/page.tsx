@@ -460,6 +460,15 @@ export default function SupplyPage() {
                         USDC
                       </div>
                     </div>
+                    {supplyAmount &&
+                      !isNaN(Number(supplyAmount)) &&
+                      Number(supplyAmount) >
+                        vaultData.supplyCap - vaultData.totalSupply && (
+                        <div className="text-red-500 text-sm mt-1">
+                          Amount exceeds available capacity. Maximum:{" "}
+                          {vaultData.supplyCap - vaultData.totalSupply}
+                        </div>
+                      )}
                   </div>
 
                   <Button

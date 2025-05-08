@@ -14,7 +14,7 @@ import {
 } from "@/app/blockchain/config";
 import { oracleABI } from "@/app/blockchain/abi/oracleABI";
 import { JsonRpcProvider } from "ethers";
-import { Address, http, createPublicClient } from "viem";
+import { Address, http, createPublicClient, formatUnits } from "viem";
 import { useTokenHoldings } from "@/lib/useFetchBalances";
 import { useGelatoSmartWalletProviderContext } from "@gelatonetwork/smartwallet-react-sdk";
 import Image from "next/image";
@@ -58,6 +58,8 @@ export default function Step1() {
   const [usdcAmount, setUsdcAmount] = useState("0");
   const [cbBtcPrice, setCbBtcPrice] = useState("0");
   const [isFetching, setIsFetching] = useState(false);
+  const [totalSupplied, setTotalSupplied] = useState(0);
+  const [totalBorrowed, setTotalBorrowed] = useState(0);
   const [apr, setApr] = useState(0);
   const {
     gelato: { client },
@@ -161,6 +163,8 @@ export default function Step1() {
     const secondsPerYear = 60 * 60 * 24 * 365;
     const apr = Math.exp(Number(borrowRate) * secondsPerYear) - 1;
     setApr(apr * 100);
+    setTotalSupplied(Number(formatUnits(marketDetails[0], 6)));
+    setTotalBorrowed(Number(formatUnits(marketDetails[2], 6)));
   }
 
   return (
@@ -188,6 +192,14 @@ export default function Step1() {
                     USDC
                   </span>
                 </div>
+                {usdcAmount &&
+                  !isNaN(Number(usdcAmount)) &&
+                  Number(usdcAmount) > totalSupplied - totalBorrowed && (
+                    <div className="text-red-500 text-sm mt-2 ml-24">
+                      Amount exceeds available liquidity. Maximum:{" "}
+                      {totalSupplied - totalBorrowed} USDC
+                    </div>
+                  )}
               </div>
 
               <div className="space-y-8">
@@ -272,7 +284,11 @@ export default function Step1() {
 
           <Button
             onClick={handleBorrow}
-            disabled={usdcAmount === "0" || isProceeding}
+            disabled={
+              usdcAmount === "0" ||
+              isProceeding ||
+              Number(usdcAmount) > totalSupplied - totalBorrowed
+            }
             className="w-full bg-black hover:bg-gray-800 h-14 text-white text-[18px] rounded-2xl"
           >
             {isProceeding ? (

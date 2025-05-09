@@ -10,7 +10,7 @@
     "export": "next export"
   },
   "dependencies": {
-    "@gelatonetwork/smartwallet-react-sdk": "0.0.2-alpha.4",
+    "@gelatonetwork/smartwallet-react-sdk": "0.0.2-alpha.5",
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-dialog": "^1.1.2",

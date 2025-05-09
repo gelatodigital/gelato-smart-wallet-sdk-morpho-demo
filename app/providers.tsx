@@ -18,16 +18,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <GelatoSmartWalletContextProvider
       settings={{
-        defaultChain: baseSepolia,
+        apiKey: process.env.NEXT_PUBLIC_GELATO_API_KEY as string,
         waas: dynamic(
           process.env.NEXT_PUBLIC_MORPHO_DYNAMIC_ENVIRONMENT_ID as string
         ),
         wagmi: wagmi({
           chains: [baseSepolia],
           transports: {
-            [baseSepolia.id]: http(
-              process.env.NEXT_PUBLIC_MORPHO_RPC_URL as string
-            ),
+            [baseSepolia.id]: http(),
           },
         }),
       }}

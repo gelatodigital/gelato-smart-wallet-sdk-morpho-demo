@@ -24,10 +24,10 @@ git clone https://github.com/gelatodigital/eip7702-next-demo.git
 cd eip7702-next-demo
 ```
 
-2. Checkout to 7702 Branch:
+2. Checkout to 7702 SDK Branch:
 
 ```bash
-git checkout gelato-morpho-7702
+git checkout gelato-7702-sdk-morpho
 ```
 
 3. Install dependencies:
@@ -73,5 +73,5 @@ The application will be available at `http://localhost:3000`
 ## Key Dependencies
 
 - `@gelatonetwork/smartwallet-react-sdk`: Gelato's 7702 React SDK
-- `viem` v2.23.9: Modern Ethereum library
+- `viem` v2.28: Modern Ethereum library
 - `ethers`: Ethereum library

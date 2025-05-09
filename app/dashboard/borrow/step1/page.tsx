@@ -136,7 +136,7 @@ export default function Step1() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
       await router.push(
-        `/borrow/step2?amount=${usdcAmount}&apr=${apr.toFixed(2)}`
+        `/dashboard/borrow/step2?amount=${usdcAmount}&apr=${apr.toFixed(2)}`
       );
     } finally {
       setIsProceeding(false);

@@ -37,16 +37,16 @@ import {
   morphoVaultAddress,
   usdcAddress,
   vaultStatsAddress,
-} from "../blockchain/config";
-import { MORPHO_VAULT_ABI } from "../blockchain/abi/morphoVaultABI";
+} from "../../blockchain/config";
+import { MORPHO_VAULT_ABI } from "../../blockchain/abi/morphoVaultABI";
 import { formatUnits } from "ethers";
-import { morphoABI } from "../blockchain/abi/morphoABI";
-import { VAULT_STATS_ABI } from "../blockchain/abi/vaultStatsABI";
+import { morphoABI } from "../../blockchain/abi/morphoABI";
+import { VAULT_STATS_ABI } from "../../blockchain/abi/vaultStatsABI";
 import { sponsored } from "@gelatonetwork/smartwallet";
-import { tokenABI } from "../blockchain/abi/ERC20ABI";
+import { tokenABI } from "../../blockchain/abi/ERC20ABI";
 import { useActivityLog } from "@/contexts/ActivityLogContext";
 import { toast } from "sonner";
-import { IRM_ABI } from "../blockchain/abi/irmABI";
+import { IRM_ABI } from "../../blockchain/abi/irmABI";
 // Custom Input component
 const Input = React.forwardRef<
   HTMLInputElement,
@@ -561,6 +561,19 @@ export default function SupplyPage() {
                             />
                             <div className="px-3 py-2 bg-gray-100">USDC</div>
                           </div>
+                          {withdrawAmount &&
+                            !isNaN(Number(withdrawAmount)) &&
+                            Number(withdrawAmount) >
+                              marketData.totalSupply -
+                                marketData.totalBorrowed && (
+                              <div className="text-red-500 text-sm mt-1">
+                                Amount exceeds current available withdrawal
+                                capacity. Maximum:{" "}
+                                {marketData.totalSupply -
+                                  marketData.totalBorrowed}{" "}
+                                USDC
+                              </div>
+                            )}
                         </div>
 
                         <Button
@@ -569,7 +582,10 @@ export default function SupplyPage() {
                           disabled={
                             !withdrawAmount ||
                             withdrawAmount === "0" ||
-                            Number(parseUnits(withdrawAmount, 6)) > userAssets
+                            Number(parseUnits(withdrawAmount, 6)) >
+                              userAssets ||
+                            Number(withdrawAmount) >
+                              marketData.totalSupply - marketData.totalBorrowed
                           }
                         >
                           Withdraw USDC

@@ -37,12 +37,13 @@ export default function Dashboard() {
 
   const [isCopied, setIsCopied] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
-  const { addLog } = useActivityLog();
+  const { addLog, clearLogs } = useActivityLog();
   const [isBorrowProceeding, setIsBorrowProceeding] = useState(false);
   const [isSupplyProceeding, setIsSupplyProceeding] = useState(false);
   const accountAddress = client?.account.address;
   const { data: tokenHoldings, refetch: refetchTokenHoldings } =
     useTokenHoldings(accountAddress as Address);
+
   const handleCopy = useCallback(() => {
     if (accountAddress) {
       navigator.clipboard.writeText(accountAddress);
@@ -58,7 +59,8 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    logout();
+    clearLogs();
+    await logout();
     router.push("/");
   };
 
@@ -118,7 +120,7 @@ export default function Dashboard() {
     setIsBorrowProceeding(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      await router.push("/borrow/step1");
+      await router.push("/dashboard/borrow/step1");
     } finally {
       setIsBorrowProceeding(false);
     }
@@ -128,7 +130,7 @@ export default function Dashboard() {
     setIsSupplyProceeding(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 800));
-      await router.push("/earn");
+      await router.push("/dashboard/earn");
     } finally {
       setIsSupplyProceeding(false);
     }

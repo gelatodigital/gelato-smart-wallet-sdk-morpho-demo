@@ -16,18 +16,18 @@ function HeaderInner({ showBackButton = false }: HeaderProps) {
   const pathname = usePathname();
   const isHomeRoute = pathname === "/";
   const isDashboardRoute = pathname === "/dashboard";
-  const isEarnRoute = pathname === "/earn";
+  const isEarnRoute = pathname === "/dashboard/earn";
 
   // Determine current step from pathname
   let currentStep = 0;
-  if (pathname.includes("/borrow/step1")) currentStep = 1;
-  else if (pathname.includes("/borrow/step2")) currentStep = 2;
+  if (pathname.includes("/dashboard/borrow/step1")) currentStep = 1;
+  else if (pathname.includes("/dashboard/borrow/step2")) currentStep = 2;
 
   const handleBack = () => {
     if (currentStep === 1) {
       router.push("/dashboard");
     } else if (currentStep === 2) {
-      router.push("/borrow/step1");
+      router.push("/dashboard/borrow/step1");
     } else if (isEarnRoute) {
       router.push("/dashboard");
     } else {

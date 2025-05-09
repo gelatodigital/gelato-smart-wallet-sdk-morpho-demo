@@ -53,7 +53,7 @@ function Step2Inner() {
         setRequiredBtc(requiredBtc?.toFixed(8) || "0");
         setTotalBtc(totalBtc?.toFixed(8) || "0");
       } else {
-        router.push("/borrow/step1");
+        router.push("/dashboard/borrow/step1");
       }
     };
     calculateSupply();

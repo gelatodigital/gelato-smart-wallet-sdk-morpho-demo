@@ -626,55 +626,22 @@ export default function SupplyPage() {
                       Vault
                     </TabsTrigger>
                   </TabsList>
-                  <TabsContent value="market" className="space-y-4 mt-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between py-2 border-b">
-                        <div className="flex items-center space-x-2">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <Image
-                              src="/usdc.svg"
-                              alt="USDC"
-                              width={20}
-                              height={20}
-                            />
-                          </div>
-                          <span>USDC</span>
+                  <TabsContent value="market" className="mt-4">
+                    <div className="flex items-center justify-between py-1">
+                      <div className="flex items-center space-x-2">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                          <Image
+                            src="/usdc.svg"
+                            alt="USDC"
+                            width={20}
+                            height={20}
+                          />
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium">
-                            {marketData.apr.toFixed(2)}% APY
-                          </div>
-                        </div>
+                        <span>USDC</span>
                       </div>
-                      <div className="py-2">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-gray-600">
-                            Utilization Rate
-                          </span>
-                          <span className="text-sm font-medium">
-                            {marketData.utilizationRate.toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full"
-                            style={{ width: `${marketData.utilizationRate}%` }}
-                          ></div>
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-3 mt-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Total Supplied</span>
-                          <span className="font-medium">
-                            ~{Math.round(marketData.totalSupply)} USDC
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm mt-1">
-                          <span className="text-gray-600">Total Borrowed</span>
-                          <span className="font-medium">
-                            ~{Math.round(marketData.totalBorrowed)} USDC
-                          </span>
+                      <div className="text-right">
+                        <div className="font-medium">
+                          {marketData.apr.toFixed(2)}% APY
                         </div>
                       </div>
                     </div>

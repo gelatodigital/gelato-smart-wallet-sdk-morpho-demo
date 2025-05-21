@@ -6,14 +6,23 @@ import { Inter } from "next/font/google";
 import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
-  title: "Gelato",
+  title: "Gelato Smart Wallet & Crypto-Backed Loans | Morpho",
   description:
-    "Explore EIP-7702 gas sponsorship and account abstraction in this interactive playground",
+    "Secure, gasless transactions and crypto-backed loans with Gelato Smart Wallet—powered by EIP-7702 and integrated with Morpho.",
   openGraph: {
-    title: "Gelato",
+    title: "Gelato Smart Wallet & Crypto-Backed Loans | Morpho",
     description:
-      "Explore EIP-7702 gas sponsorship and account abstraction in this interactive playground",
-    images: [""],
+      "Explore seamless crypto experiences powered by EIP-7702. Use Gelato Smart Wallet on Morpho for secure, gasless payments and crypto-backed loans.",
+    url: "https://morpho-aa.demo.gelato.cloud/",
+    type: "website",
+    images: ["https://morpho-aa.demo.gelato.cloud/gelato-meta-preview.png"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Gelato Smart Wallet & Crypto-Backed Loans | Morpho",
+    description:
+      "Powered by EIP-7702, Gelato Smart Wallet on Morpho enables gasless transactions and crypto-backed loans for real-world crypto use.",
+    images: ["https://morpho-aa.demo.gelato.cloud/gelato-meta-preview.png"],
   },
   icons: {
     icon: "https://raas.staging.gelato.network/images/favicon.ico",

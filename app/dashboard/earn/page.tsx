@@ -210,9 +210,12 @@ export default function SupplyPage() {
         }),
       },
     ];
-    const results = await client?.execute({
+    const preparedCalls : any = await client?.prepare({
       payment: sponsored(GELATO_API_KEY),
       calls,
+    });
+    const results = await client?.send({
+      preparedCalls,
     });
     const txHash = await results?.wait();
     setTransactionType("supply");
@@ -258,9 +261,12 @@ export default function SupplyPage() {
         }),
       },
     ];
-    const results = await client?.execute({
+    const preparedCalls : any = await client?.prepare({
       payment: sponsored(GELATO_API_KEY),
       calls,
+    });
+    const results = await client?.send({
+      preparedCalls,
     });
     const txHash = await results?.wait();
     setTransactionType("withdraw");
@@ -300,9 +306,13 @@ export default function SupplyPage() {
         },
       ];
 
-      const smartWalletResponse = await client?.execute({
+      const preparedCalls : any = await client?.prepare({
         payment: sponsored(GELATO_API_KEY),
         calls,
+      });
+      
+      const smartWalletResponse = await client?.send({
+        preparedCalls,
       });
 
       const userOpHash = smartWalletResponse?.id;

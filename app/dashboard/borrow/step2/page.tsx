@@ -163,9 +163,13 @@ function Step2Inner() {
         },
       ];
 
-      const smartWalletResponse = await client?.execute({
+      const preparedCalls : any = await client?.prepare({
         payment: sponsored(GELATO_API_KEY),
         calls,
+      });
+      
+      const smartWalletResponse = await client?.send({
+        preparedCalls,
       });
 
       const userOpHash = smartWalletResponse?.id;

@@ -11,6 +11,7 @@ import {
   Code,
   Coins,
   Loader2,
+  Play,
   Shield,
   TrendingUp,
   Wallet,
@@ -76,11 +77,22 @@ export default function Home() {
                   Connecting...
                 </Button>
               ) : (
-                <GelatoSmartWalletConnectButton>
-                  <div className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-black hover:bg-gray-800 text-white">
-                    Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                  </div>
-                </GelatoSmartWalletConnectButton>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <GelatoSmartWalletConnectButton>
+                    <div className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-black hover:bg-gray-800 text-white">
+                      Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                    </div>
+                  </GelatoSmartWalletConnectButton>
+                  <a
+                    href="https://youtu.be/jPqweHmny1w"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-200"
+                  >
+                    <Play className="mr-2 h-5 w-5" />
+                    Watch the Video
+                  </a>
+                </div>
               )}
             </div>
           </div>
@@ -588,11 +600,22 @@ export default function Home() {
                 Connecting...
               </Button>
             ) : (
-              <GelatoSmartWalletConnectButton>
-                <div className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-white hover:bg-gray-800 text-black">
-                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
-                </div>
-              </GelatoSmartWalletConnectButton>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <GelatoSmartWalletConnectButton>
+                  <div className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-white hover:bg-gray-800 text-black">
+                    Get Started <ArrowRight className="ml-2 h-5 w-5" />
+                  </div>
+                </GelatoSmartWalletConnectButton>
+                <a
+                  href="https://youtu.be/jPqweHmny1w"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center h-12 px-8 text-lg rounded-md bg-gray-500 hover:bg-gray-700 text-white border border-gray-600"
+                >
+                  <Play className="mr-2 h-5 w-5" />
+                  Watch the Video
+                </a>
+              </div>
             )}
           </div>
         </section>
